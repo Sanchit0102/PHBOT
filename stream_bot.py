@@ -271,9 +271,10 @@ async def url_handler(_, m):
         buttons.append(row)
 
     await m.reply(
-        "\n◆━━━━━━━━━━━━━━━━━━━◆",
-        "🎬 <b>Select Quality<b> 🎬",
-        "\n◆━━━━━━━━━━━━━━━━━━━◆",
+        "◆━━━━━━━━━━━━━━━━━━━◆\n"
+        "🎬 <b>Select Quality</b> 🎬\n"
+        "◆━━━━━━━━━━━━━━━━━━━◆",
+        parse_mode=ParseMode.HTML,
         reply_markup=InlineKeyboardMarkup(buttons)
     )
 
