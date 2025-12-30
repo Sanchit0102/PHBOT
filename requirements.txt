@@ -1,0 +1,8 @@
+pyrogram==2.0.106
+tgcrypto
+yt-dlp
+requests
+aiohttp
+pillow
+beautifulsoup4
+lxml
