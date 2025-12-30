@@ -53,7 +53,7 @@ async def download_poster(url: str):
     return None
 # ==========================================================================================================
 
-async def upload_hls_to_telegram(app: Client, message, url, title, duration, poster):
+async def upload_hls_to_telegram(app: Client, message, url, title, duration, poster, quality):
     temp = tempfile.gettempdir()
     base = os.path.join(temp, f"dl_{uuid4().hex}")
 
