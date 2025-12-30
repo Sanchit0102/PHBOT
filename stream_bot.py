@@ -311,11 +311,9 @@ async def url_handler(_, m):
 if __name__ == "__main__":
     app.start()
 
-    app.loop.create_task(
-        app.send_message(
-            chat_id=OWNER_ID,
-            text="𝐁𝐎𝐓 𝐑𝐄𝐒𝐓𝐀𝐑𝐓𝐄𝐃 𝐒𝐔𝐂𝐂𝐄𝐒𝐒𝐅𝐔𝐋𝐋𝐘 ✅"
-        )
+    app.send_message(
+        chat_id=OWNER_ID,
+        text="𝐁𝐎𝐓 𝐑𝐄𝐒𝐓𝐀𝐑𝐓𝐄𝐃 𝐒𝐔𝐂𝐂𝐄𝐒𝐒𝐅𝐔𝐋𝐋𝐘 ✅"
     )
 
     idle()
