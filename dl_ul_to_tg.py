@@ -17,9 +17,9 @@ def cap(title, duration, quality_url, bot_username):
 
     return (
         f"<b>{title}</b>\n\n"
-        f"Duration: {duration}\n\n"
-        f"Watch Online: <a href=\"{quality_url}\">Click Here</a>\n\n"
-        f"⚡Upload By @{html.escape(bot_username)}"
+        f"<b>Duration: {duration}</b>\n\n"
+        f"<b>Watch Online: <a href=\"{quality_url}\">Click Here</a></b>\n\n"
+        f"<b>⚡Upload By @{html.escape(bot_username)}</b>"
     )
 
 # ==========================================================================================================
