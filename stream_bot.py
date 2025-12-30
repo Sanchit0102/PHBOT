@@ -136,6 +136,8 @@ async def callback_handler(_, cb):
         return await cb.answer("Already processing", show_alert=True)
 
     USER_BUSY.add(user_id)
+    processing_msg = None
+    sticker_msg = None
     chat_id = cb.message.chat.id
 
     try:
@@ -172,7 +174,7 @@ async def callback_handler(_, cb):
             final_url,
             title=title.strip() if title else "N/A",
             duration=duration,
-            poster=poster
+            poster=poster,
             quality=quality,
         )
 
