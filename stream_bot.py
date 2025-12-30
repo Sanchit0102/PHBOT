@@ -175,7 +175,7 @@ async def start_handler(_, message):
 # URL HANDLER
 # ==========================================================================================================
 
-@app.on_message(filters.private & filters.text & ~filters.command)
+@app.on_message(filters.private & filters.text & ~filters.regex(r'^/'))
 async def url_handler(_, m):
     if not m.text.startswith("http"):
         return
