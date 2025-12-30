@@ -58,6 +58,11 @@ class HealthHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.end_headers()
 
+def start_health_server():
+    HTTPServer(("0.0.0.0", PORT), HealthHandler).serve_forever()
+
+threading.Thread(target=start_health_server, daemon=True).start()
+
 # ==========================================================================================================
 # LOGGING
 # ==========================================================================================================
