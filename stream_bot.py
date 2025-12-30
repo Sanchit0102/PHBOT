@@ -40,6 +40,25 @@ USER_BUSY = set()
 URL_RE = re.compile(r"https://(?:www\.|de\.)?pornhub\.org/view_video\.php\?viewkey=[a-zA-Z0-9]+")
 PORT = int(os.environ.get("PORT", 8080))
 
+async def fetch_metadata_for_url(url: str):
+    try:
+        results = search(url.split("viewkey=")[-1])
+        for r in results:
+            if r.get("url") == url:
+                return {
+                    "title": r.get("title"),
+                    "duration": r.get("duration"),
+                    "poster": r.get("poster"),
+                }
+    except Exception:
+        pass
+
+    return {
+        "title": None,
+        "duration": None,
+        "poster": None,
+    }
+    
 # ======================================================================================
 # Dummy HTTP server (ONLY for Render Web Service)
 # ======================================================================================
@@ -232,6 +251,10 @@ async def url_handler(_, m):
     if not m.text.startswith("http"):
         return
 
+    if m.text not in INLINE_META:
+        meta = await fetch_metadata_for_url(m.text)
+        INLINE_META[m.text] = meta
+
     if m.from_user.id in USER_BUSY:
         await m.reply("<b>Wait for current task to finish</b>")
         return
@@ -287,10 +310,12 @@ async def url_handler(_, m):
 
 if __name__ == "__main__":
     app.start()
-    
-    app.send_message(
-        chat_id=OWNER_ID,
-        text="𝐁𝐎𝐓 𝐑𝐄𝐒𝐓𝐀𝐑𝐓𝐄𝐃 𝐒𝐔𝐂𝐂𝐄𝐒𝐒𝐅𝐔𝐋𝐋𝐘 ✅"
+
+    app.loop.create_task(
+        app.send_message(
+            chat_id=OWNER_ID,
+            text="𝐁𝐎𝐓 𝐑𝐄𝐒𝐓𝐀𝐑𝐓𝐄𝐃 𝐒𝐔𝐂𝐂𝐄𝐒𝐒𝐅𝐔𝐋𝐋𝐘 ✅"
+        )
     )
 
     idle()
