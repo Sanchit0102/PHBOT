@@ -27,6 +27,20 @@ def cap(title, duration, quality_url, bot_username, filesize, quality):
         f"</blockquote>\n\n"
         f"<b>⚡ 𝖴𝗉𝗅𝗈𝖺𝖽 𝖡𝗒 - <a href=\"https://t.me/{html.escape(bot_username)}\">𝖣𝖲𝖠𝖽𝗎𝗅𝗍𝖡𝗈𝗍 🔞</a></b>"
        )
+
+def cap(title, duration, quality_url, bot_username, filesize, quality):
+    title = html.escape(title or "Video")
+    duration = duration or "N/A"
+    quality_url = html.escape(quality_url)
+
+    return (
+        f"📄 <b>𝖥𝗂𝗅𝖾 𝖭𝖺𝗆𝖾:</b> <code>{title}</code>\n\n"
+        f"🔗 <b>𝖶𝖺𝗍𝖼𝗁 𝖮𝗇𝗅𝗂𝗇𝖾:</b> <a href=\"{quality_url}\">Click Here</a>\n"
+        f"⏰ <b>𝖣𝗎𝗋𝖺𝗍𝗂𝗈𝗇:</b> {duration}\n"
+        f"📦 <b>𝖥𝗂𝗅𝖾 𝖲𝗂𝗓𝖾:</b> {filesize}\n"
+        f"🎞 <b>𝖰𝗎𝖺𝗅𝗂𝗍𝗒:</b> {quality}\n\n"
+        f"⚡ <b>𝖴𝗉𝗅𝗈𝖺𝖽 𝖡𝗒:</b> <a href=\"https://t.me/{html.escape(bot_username)}\">𝖣𝖲𝖠𝖽𝗎𝗅𝗍𝖡𝗈𝗍 🔞</a>"
+    )
     
 def human_size(size: int) -> str:
     for unit in ("B", "KB", "MB", "GB", "TB"):
