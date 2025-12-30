@@ -18,7 +18,7 @@ from pyrogram.types import (
 
 from extractor import StreamingURLExtractor
 from search import search
-from dl_ul_to_tg import upload_hls_to_telegram
+from dl_ul_to_tg import upload_hls_to_telegram, get_readable_size
 
 # ==========================================================================================================
 # CONFIG (ENV)
@@ -136,9 +136,6 @@ async def callback_handler(_, cb):
         return await cb.answer("Already processing", show_alert=True)
 
     USER_BUSY.add(user_id)
-
-    processing_msg = None
-    sticker_msg = None
     chat_id = cb.message.chat.id
 
     try:
@@ -154,8 +151,8 @@ async def callback_handler(_, cb):
         page = info["page"]
         stream_url = info["videoUrl"]
         duration = info.get("duration") or "N/A"
-
-        # show processing UI
+        quality = f"{info.get('height')}p"
+        
         processing_msg = await app.send_message(
             chat_id,
             "Processing your request..."
@@ -175,7 +172,8 @@ async def callback_handler(_, cb):
             final_url,
             title=title.strip() if title else "N/A",
             duration=duration,
-            poster=poster,
+            poster=poster
+            quality=quality,
         )
 
     finally:
