@@ -228,7 +228,7 @@ async def url_handler(_, m):
         return
 
     if m.from_user.id in USER_BUSY:
-        await m.reply("Wait for current task to finish")
+        await m.reply("<b>Wait for current task to finish</b>")
         return
 
     extractor = StreamingURLExtractor(m.text)
@@ -265,7 +265,7 @@ async def url_handler(_, m):
         buttons.append(row)
 
     await m.reply(
-        "🎬 Select Quality 🎬",
+        "🎬 <b>Select Quality<b> 🎬",
         reply_markup=InlineKeyboardMarkup(buttons)
     )
 
