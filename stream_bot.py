@@ -27,6 +27,7 @@ from dl_ul_to_tg import upload_hls_to_telegram
 API_ID = int(os.environ["API_ID"])
 API_HASH = os.environ["API_HASH"]
 BOT_TOKEN = os.environ["BOT_TOKEN"]
+OWNER_ID = int(os.environ["OWNER_ID"] or 1562935405
 
 STICKER_ID = "CAACAgEAAxkBAAK6kGlLoJrwgP6Y-FBjv1N0ZHJ_aohvAAI6AgACLeX5Ddv34qRmNpJZNgQ"
 START_IMAGE = "https://image.ashlynn.workers.dev/zixawvbuvrlejcxetoneaqhrikbgxugi"
@@ -279,5 +280,11 @@ async def url_handler(_, m):
 
 if __name__ == "__main__":
     app.start()
+    
+    app.send_message(
+        chat_id=OWNER_ID,
+        text="𝐁𝐎𝐓 𝐑𝐄𝐒𝐓𝐀𝐑𝐓𝐄𝐃 𝐒𝐔𝐂𝐂𝐄𝐒𝐒𝐅𝐔𝐋𝐋𝐘 ✅"
+    )
+
     idle()
     app.stop()
