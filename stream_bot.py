@@ -148,12 +148,13 @@ async def callback_handler(_, cb):
         except Exception:
             pass
 
-        title = info.get("title") or "Video"
+        meta = INLINE_META.get(page, {})
+        title = meta.get("title") or "Video"
+        duration = meta.get("duration") or "N/A"
         poster = info.get("poster")
         page = info["page"]
         stream_url = info["videoUrl"]
-        duration = info.get("duration") or "N/A"
-        quality = f"{info.get('height')}p"
+        quality = f"{info['height']}p"
         
         processing_msg = await app.send_message(
             chat_id,
@@ -260,6 +261,7 @@ async def url_handler(_, m):
             "title": meta.get("title") or s.get("title") or "Video",
             "duration": meta.get("duration") or "N/A",
             "poster": meta.get("poster"),
+            "height": h,
         }
 
         row.append(InlineKeyboardButton(f"◂ {h}p ▸", callback_data=sid))
