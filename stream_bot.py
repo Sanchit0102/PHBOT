@@ -148,11 +148,12 @@ async def callback_handler(_, cb):
         except Exception:
             pass
 
+        page = info["page"]
         meta = INLINE_META.get(page, {})
         title = meta.get("title") or "Video"
         duration = meta.get("duration") or "N/A"
-        poster = info.get("poster")
-        page = info["page"]
+        poster = meta.get("poster") or info.get("poster")
+        
         stream_url = info["videoUrl"]
         quality = f"{info['height']}p"
         
