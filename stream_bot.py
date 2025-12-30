@@ -36,7 +36,7 @@ STREAM_MAP = {}
 USER_BUSY = set()
 
 URL_RE = re.compile(r"https?://\S+")
-PORT = int(os.environ.get("PORT", "8080"))
+PORT = int(os.environ.get("PORT", 8080))
 
 # ======================================================================================
 # Dummy HTTP server (ONLY for Render Web Service)
@@ -135,6 +135,9 @@ async def callback_handler(_, cb):
 
     USER_BUSY.add(user_id)
 
+    processing_msg = None
+    sticker_msg = None
+
     try:
         await cb.answer()
         try:
@@ -143,14 +146,23 @@ async def callback_handler(_, cb):
             pass
 
         title = info.get("title") or "Video"
-        duration = info.get("duration") or "N/A"
         poster = info.get("poster")
         page = info["page"]
         stream_url = info["videoUrl"]
 
-        msg = await app.send_message(cb.message.chat.id, "Processing...")
+        # show processing UI
+        processing_msg = await app.send_message(
+            cb.message.chat.id,
+            "Processing your request..."
+        )
+
+        sticker_msg = await app.send_sticker(
+            cb.message.chat.id,
+            STICKER_ID
+        )
 
         extractor = StreamingURLExtractor(page)
+        duration = extractor.extract_duration()
         final_url = extractor.resolve_stream_url(stream_url)
 
         await upload_hls_to_telegram(
@@ -162,9 +174,20 @@ async def callback_handler(_, cb):
             poster=poster,
         )
 
-        await msg.delete()
-
     finally:
+        # cleanup UI
+        try:
+            if processing_msg:
+                await processing_msg.delete()
+        except Exception:
+            pass
+
+        try:
+            if sticker_msg:
+                await sticker_msg.delete()
+        except Exception:
+            pass
+
         USER_BUSY.discard(user_id)
 
 # ==========================================================================================================
@@ -178,16 +201,14 @@ async def start_handler(_, message):
 
 ━━━━━━━━━━━━━━━━━━━━━
 
-<code>⚠ Tʜᴇ Bᴏᴛ Cᴏɴᴛᴀɪɴs 18+ Cᴏɴᴛᴇɴᴛ. Kɪɴᴅʟʏ Aᴄᴄᴇss ɪᴛ Aᴛ Yᴏᴜʀ Oᴡɴ Rɪsᴋ. Cʜɪʟᴅʀᴇɴ Pʟᴇᴀsᴇ Sᴛᴀʏ Aᴡᴀʏ. Wᴇ ᴅᴏɴ'ᴛ ɪɴᴛᴇɴᴅ ᴛᴏ sᴘʀᴇᴀᴅ Pᴏʀɴᴏɢʀᴀᴘʜʏ. Tʜɪs ɪs ᴀᴜᴛᴏᴍᴀᴛᴇᴅ ᴀɴᴅ ᴘᴜʀᴘᴏsᴇ-ʙᴀsᴇᴅ.</code>
+<code>⚠ Tʜᴇ Bᴏᴛ Cᴏɴᴛᴀɪɴs 18+ Cᴏɴᴛᴇɴᴛ. Kɪɴᴅʟʏ Aᴄᴄᴇss ɪᴛ Aᴛ Yᴏᴜʀ Oᴡɴ Rɪsᴋ.</code>
 
 ━━━━━━━━━━━━━━━━━━━━━
 <b>👨🏻‍💻 Developed By @THE_DS_OFFICIAL</b>
-
 """
+
     keyboard = InlineKeyboardMarkup(
-        [[
-            InlineKeyboardButton("Search 🔎", switch_inline_query_current_chat=" ")
-        ]]
+        [[InlineKeyboardButton("Search 🔎", switch_inline_query_current_chat=" ")]]
     )
 
     await message.reply_photo(
@@ -232,7 +253,6 @@ async def url_handler(_, m):
             "page": m.text,
             "videoUrl": s["videoUrl"],
             "title": s.get("title") or "Video",
-            "duration": s.get("duration") or "N/A",
             "poster": s.get("poster"),
         }
 
