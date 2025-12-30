@@ -53,7 +53,7 @@ async def download_poster(url: str):
     return None
 # ==========================================================================================================
 
-async def upload_hls_to_telegram(app: Client, message, url, title, duration, poster, quality):
+async def upload_hls_to_telegram(app: Client, message, url, title=None, duration=None, poster=None, quality=None):
     temp = tempfile.gettempdir()
     base = os.path.join(temp, f"dl_{uuid4().hex}")
 
@@ -84,12 +84,27 @@ async def upload_hls_to_telegram(app: Client, message, url, title, duration, pos
     sent = await app.send_video(
         chat_id=message.chat.id,
         video=video,
-        caption=cap(title, duration, url, me.username or "THE_DS_OFFICIAL_BOT"),
+        caption=cap(title, duration, url, me.username or "THE_DS_OFFICIAL_BOT","Loading...", quality),
         supports_streaming=True,
         thumb=thumb_path,
         parse_mode=ParseMode.HTML
     )
 
+    video_obj = sent.video or sent.document
+    filesize = get_readable_size(video_obj.file_size)
+
+    await sent.edit_caption(
+        cap(
+            title=title,
+            duration=duration,
+            quality_url=url,
+            bot_username=me.username or "THE_DS_OFFICIAL_BOT",
+            filesize=filesize,
+            quality=quality,
+        ),
+        parse_mode=ParseMode.HTML
+    )
+    
     delmsg = await app.send_message(
     chat_id=message.chat.id,
     text=f"❗️❗️❗️ <b>IMPORTANT</b> ❗️❗️❗️\n\nᴛʜɪꜱ ꜰɪʟᴇ / ᴠɪᴅᴇᴏ ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ɪɴ <b>{DELETE_TIME // 60} Mɪɴᴜᴛᴇꜱ</b> ⏰ (ᴅᴜᴇ ᴛᴏ ᴄᴏᴘʏʀɪɢʜᴛ ɪꜱꜱᴜᴇꜱ).\n\nᴘʟᴇᴀꜱᴇ ꜰᴏʀᴡᴀʀᴅ ᴛʜɪꜱ ꜰɪʟᴇ ᴛᴏ ꜱᴏᴍᴇᴡʜᴇʀᴇ ᴇʟꜱᴇ ᴀɴᴅ ꜱᴛᴀʀᴛ ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ᴛʜᴇʀᴇ.",
