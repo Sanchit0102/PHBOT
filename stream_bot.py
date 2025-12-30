@@ -85,10 +85,9 @@ app = Client(
 @app.on_message()
 async def handler(client, message):
     await message.reply_text(
-        "Hie..",
+        "\u200b",
         reply_markup=ReplyKeyboardRemove()
     )
-
 
 @app.on_inline_query()
 async def inline_query_handler(_, q):
