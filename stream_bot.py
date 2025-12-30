@@ -18,7 +18,7 @@ from pyrogram.types import (
 
 from extractor import StreamingURLExtractor
 from search import search
-from dl_ul_to_tg import upload_hls_to_telegram, get_readable_size
+from dl_ul_to_tg import upload_hls_to_telegram
 
 # ==========================================================================================================
 # CONFIG (ENV)
