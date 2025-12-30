@@ -8,6 +8,9 @@ import asyncio
 import logging
 from uuid import uuid4
 
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
+
 from pyrogram import Client, filters, idle
 from pyrogram.enums import ParseMode
 from pyrogram.types import (
@@ -37,6 +40,22 @@ STREAM_MAP = {}
 USER_BUSY = set()
 
 URL_RE = re.compile(r"https?://\S+")
+PORT = int(os.environ.get("PORT", "8080"))
+
+# ======================================================================================
+# Dummy HTTP server (ONLY for Render Web Service)
+# ======================================================================================
+
+class HealthHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"OK")
+
+def start_health_server():
+    HTTPServer(("0.0.0.0", PORT), HealthHandler).serve_forever()
+
+threading.Thread(target=start_health_server, daemon=True).start()
 
 # ==========================================================================================================
 # LOGGING
