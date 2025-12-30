@@ -12,18 +12,30 @@ from pyrogram import Client
 
 DELETE_TIME = int(os.environ.get("DELETE_TIME", "900"))
 
-def cap(title, duration, quality_url, bot_username):
+def cap(title, duration, quality_url, bot_username, filesize, quality):
     title = html.escape(title or "Video")
     duration = duration or "N/A"
     quality_url = html.escape(quality_url)
 
     return (
-        f"<b>{title}</b>\n\n"
-        f"<b>Duration: {duration}</b>\n\n"
-        f"<b>Watch Online: <a href=\"{quality_url}\">Click Here</a></b>\n\n"
-        f"<b>⚡Upload By @{html.escape(bot_username)}</b>"
-    )
-
+        f"<blockquote>𝖥𝗂𝗅𝖾 𝖭𝖺𝗆𝖾: <code>{title}</code></blockquote>\n\n"
+        f"<blockquote>"
+        f"𝖶𝖺𝗍𝖼𝗁 𝖮𝗇𝗅𝗂𝗇𝖾: <a href=\"{quality_url}\">Click Here</a>\n"
+        f"𝖣𝗎𝗋𝖺𝗍𝗂𝗈𝗇: {duration} 𝖬𝗂𝗇𝗎𝗍𝖾𝗌\n"
+        f"𝖥𝗂𝗅𝖾 𝖲𝗂𝗓𝖾: {filesize}\n"
+        f"𝖰𝗎𝖺𝗅𝗂𝗍𝗒: {quality}"
+        f"</blockquote>\n\n"
+        f"<b>⚡ 𝖴𝗉𝗅𝗈𝖺𝖽 𝖡𝗒 - <a href=\"https://t.me/{html.escape(bot_username)}\">𝖣𝖲𝖠𝖽𝗎𝗅𝗍𝖡𝗈𝗍 🔞</a></b>"
+       )
+    
+def get_readable_size(path: str) -> str:
+    size = os.path.getsize(path)
+    for unit in ("B", "KB", "MB", "GB", "TB"):
+        if size < 1024:
+            return f"{size:.2f} {unit}"
+        size /= 1024
+    return f"{size:.2f} PB"
+    
 async def download_poster(url: str):
     if not url:
         return None
