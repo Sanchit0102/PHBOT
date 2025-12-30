@@ -199,7 +199,7 @@ async def callback_handler(_, cb):
 @app.on_message(filters.command("start") & filters.private)
 async def start_handler(_, message):
     caption = f"""
-<b>Hᴇʟʟᴏ {message.from_user.first_name}</b>
+<b>Hᴇʟʟᴏ, {message.from_user.first_name}</b>
 
 ━━━━━━━━━━━━━━━━━━━━━
 
