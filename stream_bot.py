@@ -7,6 +7,7 @@ from uuid import uuid4
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
+from pyrogram.types import ReplyKeyboardRemove
 from pyrogram import Client, filters, idle
 from pyrogram.enums import ParseMode
 from pyrogram.types import (
@@ -76,6 +77,13 @@ app = Client(
 # ==========================================================================================================
 # INLINE SEARCH
 # ==========================================================================================================
+
+@app.on_message()
+async def handler(client, message):
+    await message.reply_text(
+        "Hie..",
+        reply_markup=ReplyKeyboardRemove()
+    )
 
 @app.on_inline_query()
 async def inline_query_handler(_, q):
