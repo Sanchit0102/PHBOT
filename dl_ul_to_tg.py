@@ -28,8 +28,7 @@ def cap(title, duration, quality_url, bot_username, filesize, quality):
         f"<b>⚡ 𝖴𝗉𝗅𝗈𝖺𝖽 𝖡𝗒 - <a href=\"https://t.me/{html.escape(bot_username)}\">𝖣𝖲𝖠𝖽𝗎𝗅𝗍𝖡𝗈𝗍 🔞</a></b>"
        )
     
-def get_readable_size(path: str) -> str:
-    size = os.path.getsize(path)
+def human_size(size: int) -> str:
     for unit in ("B", "KB", "MB", "GB", "TB"):
         if size < 1024:
             return f"{size:.2f} {unit}"
@@ -91,7 +90,7 @@ async def upload_hls_to_telegram(app: Client, message, url, title=None, duration
     )
 
     video_obj = sent.video or sent.document
-    filesize = get_readable_size(video_obj.file_size)
+    filesize = human_size(video_obj.file_size)
 
     await sent.edit_caption(
         cap(
