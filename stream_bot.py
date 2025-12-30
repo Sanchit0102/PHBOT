@@ -35,7 +35,8 @@ INLINE_META = {}
 STREAM_MAP = {}
 USER_BUSY = set()
 
-URL_RE = re.compile(r"https?://\S+")
+# 0URL_RE = re.compile(r"https?://\S+")
+URL_RE = re.compile(r"https://(?:www\.|de\.)?pornhub\.org/view_video\.php\?viewkey=[a-zA-Z0-9]+")
 PORT = int(os.environ.get("PORT", 8080))
 
 # ======================================================================================
@@ -149,7 +150,8 @@ async def callback_handler(_, cb):
         poster = info.get("poster")
         page = info["page"]
         stream_url = info["videoUrl"]
-
+        duration = info.get("duration") or "N/A"
+        
         # show processing UI
         processing_msg = await app.send_message(
             cb.message.chat.id,
@@ -162,14 +164,13 @@ async def callback_handler(_, cb):
         )
 
         extractor = StreamingURLExtractor(page)
-        duration = extractor.extract_duration()
         final_url = extractor.resolve_stream_url(stream_url)
 
         await upload_hls_to_telegram(
             app,
             cb.message,
             final_url,
-            title=title,
+            title = title.strip() if title else "Video",
             duration=duration,
             poster=poster,
         )
@@ -249,11 +250,14 @@ async def url_handler(_, m):
             continue
 
         sid = uuid4().hex[:12]
+        meta = INLINE_META.get(m.text, {})
+
         STREAM_MAP[sid] = {
             "page": m.text,
             "videoUrl": s["videoUrl"],
-            "title": s.get("title") or "Video",
-            "poster": s.get("poster"),
+            "title": meta.get("title") or s.get("title") or "Video",
+            "duration": meta.get("duration") or "N/A",
+            "poster": meta.get("poster"),
         }
 
         row.append(InlineKeyboardButton(f"◂ {h}p ▸", callback_data=sid))
