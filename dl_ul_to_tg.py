@@ -47,11 +47,12 @@ async def upload_hls_to_telegram(app: Client, message, url, title, duration, pos
 
     files = [f for f in os.listdir(temp) if f.startswith(os.path.basename(base))]
     video = os.path.join(temp, files[0])
-
+    me = await app.get_me()
+    
     sent = await app.send_video(
         chat_id=message.chat.id,
         video=video,
-        caption=cap(title, duration, url),
+        caption=cap(title, duration, url, me.username or "THE_DS_OFFICIAL_BOT"),
         supports_streaming=True,
         parse_mode=ParseMode.HTML
     )
