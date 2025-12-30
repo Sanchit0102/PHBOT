@@ -197,14 +197,14 @@ async def callback_handler(_, cb):
 @app.on_message(filters.command("start") & filters.private)
 async def start_handler(_, message):
     caption = f"""
-<b>Hello {message.from_user.first_name}</b>
+<b>Hᴇʟʟᴏ {message.from_user.first_name}</b>
 
 ━━━━━━━━━━━━━━━━━━━━━
 
-<code>⚠ Tʜᴇ Bᴏᴛ Cᴏɴᴛᴀɪɴs 18+ Cᴏɴᴛᴇɴᴛ. Kɪɴᴅʟʏ Aᴄᴄᴇss ɪᴛ Aᴛ Yᴏᴜʀ Oᴡɴ Rɪsᴋ.</code>
+<code>⚠ Tʜᴇ Bᴏᴛ Cᴏɴᴛᴀɪɴs 18+ Cᴏɴᴛᴇɴᴛ. Kɪɴᴅʟʏ Aᴄᴄᴇss ɪᴛ Aᴛ Yᴏᴜʀ Oᴡɴ Rɪsᴋ. Cʜɪʟᴅʀᴇɴ Pʟᴇᴀsᴇ Sᴛᴀʏ Aᴡᴀʏ. Wᴇ ᴅᴏɴ'ᴛ ɪɴᴛᴇɴᴅ ᴛᴏ sᴘʀᴇᴀᴅ Pᴏʀɴᴏɢʀᴀᴘʜʏ. Tʜɪs ɪs ᴀᴜᴛᴏᴍᴀᴛᴇᴅ ᴀɴᴅ ᴘᴜʀᴘᴏsᴇ-ʙᴀsᴇᴅ.</code>
 
 ━━━━━━━━━━━━━━━━━━━━━
-<b>👨🏻‍💻 Developed By @THE_DS_OFFICIAL</b>
+<b>👨🏻‍💻 Dᴇᴠᴇʟᴏᴘᴇᴅ Bʏ @THE_DS_OFFICIAL</b>
 """
 
     keyboard = InlineKeyboardMarkup(
