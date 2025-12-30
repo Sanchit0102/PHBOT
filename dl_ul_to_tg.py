@@ -10,11 +10,17 @@ from pyrogram import Client
 
 DELETE_TIME = int(os.environ.get("DELETE_TIME", "900"))
 
-def cap(title, duration, url):
-    title = html.escape(title) if title else "Video"
+def cap(title, duration, quality_url, bot_username):
+    title = html.escape(title or "Video")
     duration = duration or "N/A"
-    url = html.escape(url)
-    return f"<b>{title}</b>\nDuration: {duration}\n<a href='{url}'>Watch Online</a>"
+    quality_url = html.escape(quality_url)
+
+    return (
+        f"<b>{title}</b>\n\n"
+        f"Duration: {duration}\n\n"
+        f"Watch Online: <a href=\"{quality_url}\">Click Here</a>\n\n"
+        f"⚡Upload By @{html.escape(bot_username)}"
+    )
 
 # ==========================================================================================================
 
