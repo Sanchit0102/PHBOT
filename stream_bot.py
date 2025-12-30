@@ -129,7 +129,7 @@ async def callback_handler(_, cb):
     if data not in STREAM_MAP:
         return
 
-    info = STREAM_MAP.pop(data)
+    info = STREAM_MAP[data]   
     user_id = cb.from_user.id
 
     if user_id in USER_BUSY:
@@ -139,9 +139,11 @@ async def callback_handler(_, cb):
 
     processing_msg = None
     sticker_msg = None
+    chat_id = cb.message.chat.id
 
     try:
         await cb.answer()
+
         try:
             await cb.message.delete()
         except Exception:
@@ -152,15 +154,15 @@ async def callback_handler(_, cb):
         page = info["page"]
         stream_url = info["videoUrl"]
         duration = info.get("duration") or "N/A"
-        
+
         # show processing UI
         processing_msg = await app.send_message(
-            cb.message.chat.id,
+            chat_id,
             "Processing your request..."
         )
 
         sticker_msg = await app.send_sticker(
-            cb.message.chat.id,
+            chat_id,
             STICKER_ID
         )
 
@@ -169,15 +171,14 @@ async def callback_handler(_, cb):
 
         await upload_hls_to_telegram(
             app,
-            cb.message,
+            cb.message,   
             final_url,
-            title = title.strip() if title else "Video",
+            title=title.strip() if title else "N/A",
             duration=duration,
             poster=poster,
         )
 
     finally:
-        # cleanup UI
         try:
             if processing_msg:
                 await processing_msg.delete()
@@ -191,7 +192,7 @@ async def callback_handler(_, cb):
             pass
 
         USER_BUSY.discard(user_id)
-
+        STREAM_MAP.pop(data, None)  
 # ==========================================================================================================
 # START
 # ==========================================================================================================
@@ -270,7 +271,9 @@ async def url_handler(_, m):
         buttons.append(row)
 
     await m.reply(
+        "\n◆━━━━━━━━━━━━━━━━━━━◆",
         "🎬 <b>Select Quality<b> 🎬",
+        "\n◆━━━━━━━━━━━━━━━━━━━◆",
         reply_markup=InlineKeyboardMarkup(buttons)
     )
 
