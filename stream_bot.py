@@ -158,10 +158,16 @@ async def start_handler(_, message):
 
 ━━━━━━━━━━━━━━━━━━━━━
 """
+    keyboard = InlineKeyboardMarkup(
+        [[
+            InlineKeyboardButton("Search 🔎", switch_inline_query_current_chat=" ")
+        ]]
+    )
 
     await message.reply_photo(
         photo=START_IMAGE,
         caption=caption,
+        reply_markup=keyboard,
         parse_mode=ParseMode.HTML
     )
 
