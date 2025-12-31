@@ -632,11 +632,9 @@ async def url_handler(_, m):
 # RUN
 # ==========================================================================================================
 
-async def main():
-    await app.start()
-    await app.send_message(OWNER_ID, "𝐁𝐎𝐓 𝐑𝐄𝐒𝐓𝐀𝐑𝐓𝐄𝐃 𝐒𝐔𝐂𝐂𝐄𝐒𝐒𝐅𝐔𝐋𝐋𝐘 ✅")
-    await idle()
-    await app.stop()
-
 if __name__ == "__main__":
-    asyncio.run(main())
+    app.start()
+    app.send_message(OWNER_ID, "𝐁𝐎𝐓 𝐑𝐄𝐒𝐓𝐀𝐑𝐓𝐄𝐃 𝐒𝐔𝐂𝐂𝐄𝐒𝐒𝐅𝐔𝐋𝐋𝐘 ✅")
+    idle()
+    app.stop()
+
