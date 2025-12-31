@@ -132,7 +132,7 @@ async def download_poster(url: str):
 
 # ==========================================================================================================
 
-async def upload_hls_to_telegram(app: Client, message, url, title=None, duration=None, poster=None, quality=None):
+async def upload_hls_to_telegram(app: Client, message, user_id: int, url, title=None, duration=None, poster=None, quality=None):
     temp = tempfile.gettempdir()
     base = os.path.join(temp, f"dl_{uuid4().hex}")
 
@@ -172,8 +172,7 @@ async def upload_hls_to_telegram(app: Client, message, url, title=None, duration
     duration_str = duration 
     duration_sec = None
     file_code = uuid4().hex[:10]
-    user_id = message.from_user.id
-
+   
     getfile_btn = InlineKeyboardMarkup(
         [[
             InlineKeyboardButton("🔁 Get File Again", callback_data=f"GET_{file_code}")
@@ -223,7 +222,7 @@ async def upload_hls_to_telegram(app: Client, message, url, title=None, duration
     )
     
     delmsg = await app.send_message(
-    chat_id=message.chat.id,
+    chat_id=user_id,
     text=f"❗️❗️❗️ <b>IMPORTANT</b> ❗️❗️❗️\n\nᴛʜɪꜱ ꜰɪʟᴇ / ᴠɪᴅᴇᴏ ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ɪɴ <b>{DELETE_TIME // 60} Mɪɴᴜᴛᴇꜱ</b> ⏰ (ᴅᴜᴇ ᴛᴏ ᴄᴏᴘʏʀɪɢʜᴛ ɪꜱꜱᴜᴇꜱ).\n\nᴘʟᴇᴀꜱᴇ ꜰᴏʀᴡᴀʀᴅ ᴛʜɪꜱ ꜰɪʟᴇ ᴛᴏ ꜱᴏᴍᴇᴡʜᴇʀᴇ ᴇʟꜱᴇ ᴀɴᴅ ꜱᴛᴀʀᴛ ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ᴛʜᴇʀᴇ.",
     parse_mode=ParseMode.HTML
     )
@@ -358,7 +357,8 @@ async def callback_handler(_, cb):
 
         await upload_hls_to_telegram(
             app,
-            cb.message,   
+            cb.message, 
+            cb.from_user.id,
             final_url,
             title=title.strip() if title else "N/A",
             duration=duration,
