@@ -175,13 +175,13 @@ async def upload_hls_to_telegram(app: Client, message, user, user_id: int, url, 
    
     getfile_btn = InlineKeyboardMarkup(
         [[
-            InlineKeyboardButton("🔁 Get File Again", url=f"https://t.me/{bot_username}?start=DS_{file_code}")
+            InlineKeyboardButton("🔁 Get File Again 🔁", url=f"https://t.me/{bot_username}?start=DS_{file_code}")
         ]]
         )
 
     share_btn = InlineKeyboardMarkup(
         [[  
-            InlineKeyboardButton("🔗 Share Video", url=f"https://t.me/share/url?url=https://t.me/{bot_username}?start=DS_{file_code}")
+            InlineKeyboardButton("🔗 Share Video 🔗", url=f"https://t.me/share/url?url=https://t.me/{bot_username}?start=DS_{file_code}")
         ]]
         )
     
