@@ -199,8 +199,6 @@ async def callback_handler(_, cb):
                 await sticker_msg.delete()
         except Exception:
             pass
-
-        USER_BUSY.discard(user_id)
         STREAM_MAP.pop(data, None)  
 # ==========================================================================================================
 # START
@@ -244,15 +242,18 @@ async def url_handler(_, m):
         r = requests.get(m.text, headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
         soup = BeautifulSoup(r.text, "lxml")
 
+        dur = soup.find("meta", property="video:duration")
+        duration = None
+        if dur and dur.get("content"):
+            sec = int(dur["content"])
+            duration = f"{sec//60}:{sec%60:02d}"
+
         INLINE_META[vk] = {
             "title": (soup.find("meta", property="og:title") or {}).get("content"),
             "poster": (soup.find("meta", property="og:image") or {}).get("content"),
-            "duration": (
-                soup.select_one("span.duration").text.strip()
-                if soup.select_one("span.duration") else None
-            ),
+            "duration": duration,
         }
-        
+    
     if m.from_user.id in USER_BUSY:
         await m.reply("<b>Wait for current task to finish</b>")
         return
