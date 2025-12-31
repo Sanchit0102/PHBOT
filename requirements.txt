@@ -6,3 +6,4 @@ aiohttp
 pillow
 beautifulsoup4
 lxml
+motor==2.5.1
