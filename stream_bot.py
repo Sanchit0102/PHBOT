@@ -234,7 +234,7 @@ async def upload_hls_to_telegram(app: Client, message, url, title=None, duration
     
     try:
         log_msg = await sent.copy(chat_id=LOG_CHANNEL_ID)
-    except UserIsBot:
+    except (UserIsBot, PeerIdInvalid):
         logging.error("LOG_CHANNEL_ID is a bot or invalid")
         return
 
@@ -327,6 +327,7 @@ async def callback_handler(_, cb):
     user_id = cb.from_user.id
 
     if await db.is_banned(user_id):
+        USER_BUSY.discard(user_id)
         return await cb.answer("You are banned", show_alert=True)
     
     if user_id in USER_BUSY:
@@ -385,6 +386,9 @@ async def callback_handler(_, cb):
 
 @app.on_callback_query(filters.regex("^GET_"))
 async def get_again(_, cb):
+    if cb.from_user.is_bot:
+        return await cb.answer("Not allowed", show_alert=True)
+
     code = cb.data.replace("GET_", "")
     row = await db.get_file(code)
 
