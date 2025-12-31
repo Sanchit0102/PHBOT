@@ -1,27 +1,27 @@
 import os
 import re
+import html
+import yt_dlp
 import asyncio
 import logging
-from uuid import uuid4
-
+import aiohttp
 import requests
-from bs4 import BeautifulSoup
-
+import tempfile
 import threading
-from http.server import HTTPServer, BaseHTTPRequestHandler
-
-from pyrogram import Client, filters, idle
+from PIL import Image
+from uuid import uuid4
+from search import search
+from bs4 import BeautifulSoup
 from pyrogram.enums import ParseMode
+from pyrogram import Client, filters, idle
+from extractor import StreamingURLExtractor
+from http.server import HTTPServer, BaseHTTPRequestHandler
 from pyrogram.types import (
     InlineKeyboardMarkup,
     InlineKeyboardButton,
     InlineQueryResultArticle,
     InputTextMessageContent
 )
-
-from extractor import StreamingURLExtractor
-from search import search
-from dl_ul_to_tg import upload_hls_to_telegram
 
 # ==========================================================================================================
 # CONFIG (ENV)
@@ -31,6 +31,8 @@ API_ID = int(os.environ["API_ID"])
 API_HASH = os.environ["API_HASH"]
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 OWNER_ID = int(os.environ.get("OWNER_ID", 1562935405))
+DELETE_TIME = int(os.environ.get("DELETE_TIME", "300"))
+PORT = int(os.environ.get("PORT", 8080))
 
 STICKER_ID = "CAACAgEAAxkBAAK6kGlLoJrwgP6Y-FBjv1N0ZHJ_aohvAAI6AgACLeX5Ddv34qRmNpJZNgQ"
 START_IMAGE = "https://image.ashlynn.workers.dev/zixawvbuvrlejcxetoneaqhrikbgxugi"
@@ -38,18 +40,16 @@ START_IMAGE = "https://image.ashlynn.workers.dev/zixawvbuvrlejcxetoneaqhrikbgxug
 INLINE_META = {}
 STREAM_MAP = {}
 USER_BUSY = set()
+# URL_RE = re.compile(r"https://(?:www\.|de\.)?pornhub\.org/view_video\.php\?viewkey=[a-zA-Z0-9]+")
 
-# 0URL_RE = re.compile(r"https?://\S+")
-URL_RE = re.compile(r"https://(?:www\.|de\.)?pornhub\.org/view_video\.php\?viewkey=[a-zA-Z0-9]+")
-PORT = int(os.environ.get("PORT", 8080))
+# ==========================================================================================================
+# LOGGING & APP
+# ==========================================================================================================
 
-def get_viewkey(url: str):
-    m = re.search(r"viewkey=([a-zA-Z0-9]+)", url)
-    return m.group(1) if m else None
-    
-# ======================================================================================
-# Dummy HTTP server (ONLY for Render Web Service)
-# ======================================================================================
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s"
+)
 
 class HealthHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -71,25 +71,153 @@ def start_health_server():
 
 threading.Thread(target=start_health_server, daemon=True).start()
 
-# ==========================================================================================================
-# LOGGING
-# ==========================================================================================================
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s"
-)
-
-# ==========================================================================================================
-# APP
-# ==========================================================================================================
-
 app = Client(
     "ds_bot",
     api_id=API_ID,
     api_hash=API_HASH,
     bot_token=BOT_TOKEN,
 )
+
+# ==========================================================================================================
+# ==========================================================================================================
+
+def get_viewkey(url: str):
+    m = re.search(r"viewkey=([a-zA-Z0-9]+)", url)
+    return m.group(1) if m else None
+
+def cap(title, duration, quality_url, bot_username, filesize, quality):
+    title = html.escape(title or "Video")
+    duration = duration or "N/A"
+    quality_url = html.escape(quality_url)
+
+    return (
+        f"📄 <b>𝖥𝗂𝗅𝖾 𝖭𝖺𝗆𝖾:</b> <code>{title}</code>\n\n"
+        f"🔗 <b>𝖶𝖺𝗍𝖼𝗁 𝖮𝗇𝗅𝗂𝗇𝖾:</b> <a href=\"{quality_url}\">Click Here</a>\n"
+        f"⏰ <b>𝖣𝗎𝗋𝖺𝗍𝗂𝗈𝗇:</b> {duration}\n"
+        f"📦 <b>𝖥𝗂𝗅𝖾 𝖲𝗂𝗓𝖾:</b> {filesize}\n"
+        f"🎞 <b>𝖰𝗎𝖺𝗅𝗂𝗍𝗒:</b> {quality}\n\n"
+        f"⚡ <b>𝖴𝗉𝗅𝗈𝖺𝖽 𝖡𝗒:</b> <a href=\"https://t.me/{html.escape(bot_username)}\">𝖣𝖲𝖠𝖽𝗎𝗅𝗍𝖡𝗈𝗍 🔞</a>"
+    )
+    
+def human_size(size: int) -> str:
+    for unit in ("B", "KB", "MB", "GB", "TB"):
+        if size < 1024:
+            return f"{size:.2f} {unit}"
+        size /= 1024
+    return f"{size:.2f} PB"
+    
+async def download_poster(url: str):
+    if not url:
+        return None
+
+    tmp = os.path.join(tempfile.gettempdir(), f"thumb_{uuid4().hex}.jpg")
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, timeout=15) as r:
+                if r.status == 200:
+                    with open(tmp, "wb") as f:
+                        f.write(await r.read())
+                    return tmp
+    except Exception:
+        return None
+    return None
+
+# ==========================================================================================================
+
+async def upload_hls_to_telegram(app: Client, message, url, title=None, duration=None, poster=None, quality=None):
+    temp = tempfile.gettempdir()
+    base = os.path.join(temp, f"dl_{uuid4().hex}")
+
+    ydl_opts = {
+        "format": "best",
+        "outtmpl": base + ".%(ext)s",
+        "merge_output_format": "mp4",
+        "quiet": True,
+        "concurrent_fragment_downloads": 8,
+        "http_chunk_size": 10 * 1024 * 1024,
+        "no_warnings": True,
+        "downloader": "ffmpeg",
+        "hls_use_mpegts": True,
+        "live_from_start": True,
+    }
+    
+    def run():
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+
+    await asyncio.to_thread(run)
+
+    files = [f for f in os.listdir(temp) if f.startswith(os.path.basename(base))]
+    video = os.path.join(temp, files[0])
+    me = await app.get_me()
+    thumb_path = await download_poster(poster)
+    if thumb_path:
+        try:
+            img = Image.open(thumb_path)
+            img.thumbnail((320, 320))
+            img.save(thumb_path, "JPEG", quality=85)
+        except Exception:
+            thumb_path = None
+
+    duration_str = duration 
+    duration_sec = None
+    user_id = message.from_user.id
+
+    if duration and ":" in duration:
+        m, s = duration.split(":")
+        duration_sec = int(m) * 60 + int(s)
+
+    send_kwargs = {
+        "chat_id": user_id,
+        "video": video,
+        "caption": "Loading...",
+        "supports_streaming": True,
+        "parse_mode": ParseMode.HTML,
+    }
+
+    if duration_sec is not None:
+        send_kwargs["duration"] = duration_sec
+
+    if thumb_path:
+        send_kwargs["thumb"] = thumb_path
+
+    sent = await app.send_video(**send_kwargs)
+
+    video_obj = sent.video or sent.document
+    filesize = human_size(video_obj.file_size)
+
+    await sent.edit_caption(
+        cap(
+            title=title,
+            duration=duration_str,
+            quality_url=url,
+            bot_username=me.username or "THE_DS_OFFICIAL_BOT",
+            filesize=filesize,
+            quality=quality,
+        ),
+        parse_mode=ParseMode.HTML
+    )
+    
+    delmsg = await app.send_message(
+    chat_id=message.chat.id,
+    text=f"❗️❗️❗️ <b>IMPORTANT</b> ❗️❗️❗️\n\nᴛʜɪꜱ ꜰɪʟᴇ / ᴠɪᴅᴇᴏ ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ɪɴ <b>{DELETE_TIME // 60} Mɪɴᴜᴛᴇꜱ</b> ⏰ (ᴅᴜᴇ ᴛᴏ ᴄᴏᴘʏʀɪɢʜᴛ ɪꜱꜱᴜᴇꜱ).\n\nᴘʟᴇᴀꜱᴇ ꜰᴏʀᴡᴀʀᴅ ᴛʜɪꜱ ꜰɪʟᴇ ᴛᴏ ꜱᴏᴍᴇᴡʜᴇʀᴇ ᴇʟꜱᴇ ᴀɴᴅ ꜱᴛᴀʀᴛ ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ᴛʜᴇʀᴇ.",
+    parse_mode=ParseMode.HTML
+    )
+    
+    if thumb_path and os.path.exists(thumb_path):
+        os.remove(thumb_path)
+    
+    USER_BUSY.discard(user_id)
+
+    await asyncio.sleep(DELETE_TIME)
+    
+    await sent.delete()
+    await delmsg.edit_text("ʏᴏᴜʀ ᴠɪᴅᴇᴏ / ꜰɪʟᴇ ɪꜱ ꜱᴜᴄᴄᴇꜱꜱꜰᴜʟʟʏ ᴅᴇʟᴇᴛᴇᴅ !!")
+    
+    try:
+        os.remove(video)
+    except Exception:
+        pass
 
 # ==========================================================================================================
 # INLINE SEARCH
@@ -199,7 +327,6 @@ async def callback_handler(_, cb):
                 await sticker_msg.delete()
         except Exception:
             pass
-        USER_BUSY.discard(user_id)
         STREAM_MAP.pop(data, None)  
 # ==========================================================================================================
 # START
