@@ -3,7 +3,7 @@ import datetime
 import os
 
 MONGO_URI = os.environ["MONGO_URI"]
-DB_NAME = os.environ.get("DB_NAME", "telegram_bot")
+DB_NAME = os.environ.get("DB_NAME", "ph_telegram_bot")
 LOG_CHANNEL_ID = int(os.environ.get("LOG_CHANNEL_ID", -1002609521633))
 LOG_TEXT = """<i><u>👁️‍🗨️USER DETAILS</u>
 
