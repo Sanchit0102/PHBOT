@@ -92,16 +92,22 @@ async def upload_hls_to_telegram(app: Client, message, url, title=None, duration
     if duration and ":" in duration:
         m, s = duration.split(":")
         duration_sec = int(m) * 60 + int(s)
-    
-    sent = await app.send_video(
-        chat_id=message.chat.id,
-        video=video,
-        caption="Loading...",
-        duration=duration_sec,
-        supports_streaming=True,
-        thumb=thumb_path,
-        parse_mode=ParseMode.HTML
-    )
+
+    send_kwargs = {
+        "chat_id": message.chat.id,
+        "video": video,
+        "caption": "Loading...",
+        "supports_streaming": True,
+        "parse_mode": ParseMode.HTML,
+    }
+
+    if duration_sec is not None:
+        send_kwargs["duration"] = duration_sec
+
+    if thumb_path:
+        send_kwargs["thumb"] = thumb_path
+
+    sent = await app.send_video(**send_kwargs)
 
     video_obj = sent.video or sent.document
     filesize = human_size(video_obj.file_size)
