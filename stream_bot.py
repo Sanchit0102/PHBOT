@@ -394,20 +394,27 @@ async def callback_handler(_, cb):
 
 @app.on_message(filters.command("start") & filters.private)
 async def start_handler(_, message):
+    user = message.from_user
     await adds_user(app, message)
+    await db.add_user(user)
 
-    if await db.is_banned(message.from_user.id):
+    # ban check
+    if await db.is_banned(user.id):
         return await message.reply("🚫 You are banned from using this bot.")
 
+    # deep link handling
     if len(message.command) > 1 and message.command[1].startswith("DS_"):
         code = message.command[1][3:]
-        row = await db.get_file(code)
+        data = await db.get_file(code)
 
-        if row:
+        if not data:
+            return await message.reply("File not found or expired")
+
+        try:
             sent = await app.copy_message(
                 chat_id=message.chat.id,
                 from_chat_id=LOG_CHANNEL_ID,
-                message_id=row["log_msg_id"]
+                message_id=data["log_msg_id"]
             )
 
             delmsg = await app.send_message(
@@ -415,10 +422,15 @@ async def start_handler(_, message):
                 text=f"❗️❗️❗️ <b>IMPORTANT</b> ❗️❗️❗️\n\nᴛʜɪꜱ ꜰɪʟᴇ / ᴠɪᴅᴇᴏ ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ɪɴ <b>{DELETE_TIME // 60} Mɪɴᴜᴛᴇꜱ</b> ⏰ (ᴅᴜᴇ ᴛᴏ ᴄᴏᴘʏʀɪɢʜᴛ ɪꜱꜱᴜᴇꜱ).\n\nᴘʟᴇᴀꜱᴇ ꜰᴏʀᴡᴀʀᴅ ᴛʜɪꜱ ꜰɪʟᴇ ᴛᴏ ꜱᴏᴍᴇᴡʜᴇʀᴇ ᴇʟꜱᴇ ᴀɴᴅ ꜱᴛᴀʀᴛ ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ᴛʜᴇʀᴇ.",
                 parse_mode=ParseMode.HTML
             )
+            
             await asyncio.sleep(DELETE_TIME)
             await sent.delete()
             await delmsg.delete()
-        return
+            
+        except Exception as e:
+            return await message.reply("Failed to retrieve file")
+
+        return  
     
     caption = f"""
 <b>Hᴇʟʟᴏ, {message.from_user.first_name}</b>
