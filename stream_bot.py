@@ -166,7 +166,8 @@ async def callback_handler(_, cb):
             await cb.message.delete()
         except Exception:
             pass
-
+            
+        page = info["page"]
         title = info["title"]
         duration = info["duration"]
         poster = info["poster"]
