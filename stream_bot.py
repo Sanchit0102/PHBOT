@@ -133,10 +133,6 @@ async def download_poster(url: str):
 # ==========================================================================================================
 
 async def upload_hls_to_telegram(app: Client, message, url, title=None, duration=None, poster=None, quality=None):
-    if message.from_user and message.from_user.is_bot:
-        logging.warning("Blocked attempt to send media to a bot")
-        return
-
     temp = tempfile.gettempdir()
     base = os.path.join(temp, f"dl_{uuid4().hex}")
 
