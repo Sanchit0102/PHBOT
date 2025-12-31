@@ -4,6 +4,9 @@ import asyncio
 import logging
 from uuid import uuid4
 
+import requests
+from bs4 import BeautifulSoup
+
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
@@ -257,9 +260,18 @@ async def url_handler(_, m):
 
     vk = get_viewkey(m.text)
     if vk and vk not in INLINE_META:
-        meta = await fetch_metadata_for_url(m.text)
-        INLINE_META[vk] = meta
+        r = requests.get(m.text, headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
+        soup = BeautifulSoup(r.text, "lxml")
 
+        INLINE_META[vk] = {
+            "title": (soup.find("meta", property="og:title") or {}).get("content"),
+            "poster": (soup.find("meta", property="og:image") or {}).get("content"),
+            "duration": (
+                soup.select_one("span.duration").text.strip()
+                if soup.select_one("span.duration") else None
+            ),
+        }
+        
     if m.from_user.id in USER_BUSY:
         await m.reply("<b>Wait for current task to finish</b>")
         return
@@ -316,7 +328,7 @@ async def url_handler(_, m):
 if __name__ == "__main__":
     app.start()
 
-    app.send_message(
+    await app.send_message(
         chat_id=OWNER_ID,
         text="𝐁𝐎𝐓 𝐑𝐄𝐒𝐓𝐀𝐑𝐓𝐄𝐃 𝐒𝐔𝐂𝐂𝐄𝐒𝐒𝐅𝐔𝐋𝐋𝐘 ✅"
     )
