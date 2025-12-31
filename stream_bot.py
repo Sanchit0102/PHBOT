@@ -1,22 +1,27 @@
 import os
 import re
 import html
+import time 
 import yt_dlp
 import asyncio
 import logging
 import aiohttp
+import datetime
 import requests
 import tempfile
 import threading
 from PIL import Image
 from uuid import uuid4
 from search import search
+from db import db, adds_user
 from bs4 import BeautifulSoup
 from pyrogram.enums import ParseMode
 from pyrogram import Client, filters, idle
 from extractor import StreamingURLExtractor
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from pyrogram.errors import FloodWait, InputUserDeactivated, UserIsBlocked, PeerIdInvalid
 from pyrogram.types import (
+    Message,
     InlineKeyboardMarkup,
     InlineKeyboardButton,
     InlineQueryResultArticle,
@@ -31,11 +36,12 @@ API_ID = int(os.environ["API_ID"])
 API_HASH = os.environ["API_HASH"]
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 OWNER_ID = int(os.environ.get("OWNER_ID", 1562935405))
-DELETE_TIME = int(os.environ.get("DELETE_TIME", "300"))
-PORT = int(os.environ.get("PORT", 8080))
+LOG_CHANNEL_ID = int(os.environ.get("LOG_CHANNEL_ID", -1002609521633))
 
 STICKER_ID = "CAACAgEAAxkBAAK6kGlLoJrwgP6Y-FBjv1N0ZHJ_aohvAAI6AgACLeX5Ddv34qRmNpJZNgQ"
 START_IMAGE = "https://image.ashlynn.workers.dev/zixawvbuvrlejcxetoneaqhrikbgxugi"
+DELETE_TIME = int(os.environ.get("DELETE_TIME", "300"))
+PORT = int(os.environ.get("PORT", 8080))
 
 INLINE_META = {}
 STREAM_MAP = {}
@@ -79,6 +85,7 @@ app = Client(
 )
 
 # ==========================================================================================================
+# HELPERS
 # ==========================================================================================================
 
 def get_viewkey(url: str):
@@ -150,6 +157,8 @@ async def upload_hls_to_telegram(app: Client, message, url, title=None, duration
     files = [f for f in os.listdir(temp) if f.startswith(os.path.basename(base))]
     video = os.path.join(temp, files[0])
     me = await app.get_me()
+    bot_username = me.username
+
     thumb_path = await download_poster(poster)
     if thumb_path:
         try:
@@ -161,8 +170,21 @@ async def upload_hls_to_telegram(app: Client, message, url, title=None, duration
 
     duration_str = duration 
     duration_sec = None
+    file_code = uuid4().hex[:10]
     user_id = message.from_user.id
 
+    getfile_btn = InlineKeyboardMarkup(
+        [[
+            InlineKeyboardButton("🔁 Get File Again", callback_data=f"GET_{file_code}")
+        ]]
+        )
+
+    share_btn = InlineKeyboardMarkup(
+        [[  
+            InlineKeyboardButton("🔗 Share Video", url=f"https://t.me/share/url?url=https://t.me/{bot_username}?start=DS_{file_code}")
+        ]]
+        )
+    
     if duration and ":" in duration:
         m, s = duration.split(":")
         duration_sec = int(m) * 60 + int(s)
@@ -195,6 +217,7 @@ async def upload_hls_to_telegram(app: Client, message, url, title=None, duration
             filesize=filesize,
             quality=quality,
         ),
+        reply_markup=share_btn,
         parse_mode=ParseMode.HTML
     )
     
@@ -204,6 +227,25 @@ async def upload_hls_to_telegram(app: Client, message, url, title=None, duration
     parse_mode=ParseMode.HTML
     )
     
+    log_msg = await app.forward_messages(
+            chat_id=LOG_CHANNEL_ID,
+            from_chat_id=sent.chat.id,
+            message_ids=sent.id
+        )
+
+    await app.send_message(
+        LOG_CHANNEL_ID,
+        text=(
+            f"Requested by: @{message.from_user.username or 'N/A'}\n"
+            f"Name: {message.from_user.first_name}\n"
+            f"User ID: {message.from_user.id}\n"
+            f"File Code: {file_code}"
+        ),
+        reply_to_message_id=log_msg.id
+    )
+
+    await db.save_file(file_code, log_msg.id)
+
     if thumb_path and os.path.exists(thumb_path):
         os.remove(thumb_path)
     
@@ -212,7 +254,11 @@ async def upload_hls_to_telegram(app: Client, message, url, title=None, duration
     await asyncio.sleep(DELETE_TIME)
     
     await sent.delete()
-    await delmsg.edit_text("<b>ʏᴏᴜʀ ᴠɪᴅᴇᴏ / ꜰɪʟᴇ ɪꜱ ꜱᴜᴄᴄᴇꜱꜱꜰᴜʟʟʏ ᴅᴇʟᴇᴛᴇᴅ !!</b>")
+    await delmsg.edit_text(
+        "<b>ʏᴏᴜʀ ᴠɪᴅᴇᴏ / ꜰɪʟᴇ ɪꜱ ꜱᴜᴄᴄᴇꜱꜱꜰᴜʟʟʏ ᴅᴇʟᴇᴛᴇᴅ !!</b>",
+        parse_mode=ParseMode.HTML,
+        reply_markup=getfile_btn,
+        )
     
     try:
         os.remove(video)
@@ -269,21 +315,18 @@ async def callback_handler(_, cb):
     info = STREAM_MAP[data]   
     user_id = cb.from_user.id
 
+    if await db.is_banned(user_id):
+        return await cb.answer("You are banned", show_alert=True)
+    
     if user_id in USER_BUSY:
         return await cb.answer("Already processing", show_alert=True)
 
     USER_BUSY.add(user_id)
-    processing_msg = None
-    sticker_msg = None
     chat_id = cb.message.chat.id
 
     try:
         await cb.answer()
-
-        try:
-            await cb.message.delete()
-        except Exception:
-            pass
+        await cb.message.delete()
             
         page = info["page"]
         title = info["title"]
@@ -328,12 +371,63 @@ async def callback_handler(_, cb):
         except Exception:
             pass
         STREAM_MAP.pop(data, None)  
+
+@app.on_callback_query(filters.regex("^GET_"))
+async def get_again(_, cb):
+    code = cb.data.replace("GET_", "")
+    row = await db.get_file(code)
+
+    if not row:
+        return await cb.answer("File not found", show_alert=True)
+
+    sent = await app.forward_messages(
+        cb.message.chat.id,
+        LOG_CHANNEL_ID,
+        row["log_msg_id"]
+    )
+
+    delmsg = await app.send_message(
+    cb.message.chat.id,
+    text=f"❗️❗️❗️ <b>IMPORTANT</b> ❗️❗️❗️\n\nᴛʜɪꜱ ꜰɪʟᴇ / ᴠɪᴅᴇᴏ ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ɪɴ <b>{DELETE_TIME // 60} Mɪɴᴜᴛᴇꜱ</b> ⏰ (ᴅᴜᴇ ᴛᴏ ᴄᴏᴘʏʀɪɢʜᴛ ɪꜱꜱᴜᴇꜱ).\n\nᴘʟᴇᴀꜱᴇ ꜰᴏʀᴡᴀʀᴅ ᴛʜɪꜱ ꜰɪʟᴇ ᴛᴏ ꜱᴏᴍᴇᴡʜᴇʀᴇ ᴇʟꜱᴇ ᴀɴᴅ ꜱᴛᴀʀᴛ ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ᴛʜᴇʀᴇ.",
+    parse_mode=ParseMode.HTML
+    )
+
+    await asyncio.sleep(DELETE_TIME)
+    await sent.delete()
+    await delmsg.delete()
+    await cb.answer()
+
 # ==========================================================================================================
 # START
 # ==========================================================================================================
 
 @app.on_message(filters.command("start") & filters.private)
 async def start_handler(_, message):
+    await adds_user(app, message)
+
+    if await db.is_banned(message.from_user.id):
+        return await message.reply("🚫 You are banned from using this bot.")
+
+    if len(message.command) > 1 and message.command[1].startswith("DS_"):
+        code = message.command[1][3:]
+        row = await db.get_file(code)
+
+        if row:
+            sent = await app.forward_messages(
+                message.chat.id,
+                LOG_CHANNEL_ID,
+                row["log_msg_id"]
+            )
+            delmsg = await app.send_message(
+                message.chat.id,
+                text=f"❗️❗️❗️ <b>IMPORTANT</b> ❗️❗️❗️\n\nᴛʜɪꜱ ꜰɪʟᴇ / ᴠɪᴅᴇᴏ ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ɪɴ <b>{DELETE_TIME // 60} Mɪɴᴜᴛᴇꜱ</b> ⏰ (ᴅᴜᴇ ᴛᴏ ᴄᴏᴘʏʀɪɢʜᴛ ɪꜱꜱᴜᴇꜱ).\n\nᴘʟᴇᴀꜱᴇ ꜰᴏʀᴡᴀʀᴅ ᴛʜɪꜱ ꜰɪʟᴇ ᴛᴏ ꜱᴏᴍᴇᴡʜᴇʀᴇ ᴇʟꜱᴇ ᴀɴᴅ ꜱᴛᴀʀᴛ ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ᴛʜᴇʀᴇ.",
+                parse_mode=ParseMode.HTML
+            )
+            await asyncio.sleep(DELETE_TIME)
+            await sent.delete()
+            await delmsg.delete()
+        return
+    
     caption = f"""
 <b>Hᴇʟʟᴏ, {message.from_user.first_name}</b>
 
@@ -356,15 +450,118 @@ async def start_handler(_, message):
         parse_mode=ParseMode.HTML
     )
 
+
+@app.on_message(filters.command("users") & filters.user(OWNER_ID))
+async def get_stats(bot, message):
+    mr = await message.reply('**𝙰𝙲𝙲𝙴𝚂𝚂𝙸𝙽𝙶 𝙳𝙴𝚃𝙰𝙸𝙻𝚂.....**')
+    total_users = await db.total_users_count()
+    await mr.edit( text=f"Total Users : `{total_users}`")
+
+@app.on_message(filters.command("broadcast") & filters.user(OWNER_ID) & filters.reply)
+async def broadcast_handler(bot: Client, m: Message):
+    all_users = await db.get_all_users()
+    broadcast_msg = m.reply_to_message
+    sts_msg = await m.reply_text("broadcast started !") 
+    done = 0
+    failed = 0
+    success = 0
+    start_time = time.time()
+    total_users = await db.total_users_count()
+    async for user in all_users:
+        sts = await send_msg(user['id'], broadcast_msg)
+        if sts == 200:
+           success += 1
+        else:
+           failed += 1
+        if sts == 400:
+           await db.delete_user(user['id'])
+        done += 1
+        if not done % 20:
+           await sts_msg.edit(f"Broadcast in progress:\nnTotal Users {total_users}\nCompleted: {done} / {total_users}\nSuccess: {success}\nFailed: {failed}")
+    completed_in = datetime.timedelta(seconds=int(time.time() - start_time))
+    await sts_msg.edit(f"Broadcast Completed:\nCompleted in `{completed_in}`.\n\nTotal Users {total_users}\nCompleted: {done} / {total_users}\nSuccess: {success}\nFailed: {failed}")
+ 
+         
+async def send_msg(user_id, message):
+    try:
+        await message.copy(chat_id=int(user_id))
+        return 200
+    except FloodWait as e:
+        await asyncio.sleep(e.value)
+        return send_msg(user_id, message)
+    except InputUserDeactivated:
+        print(f"{user_id} : deactivated")
+        return 400
+    except UserIsBlocked:
+        print(f"{user_id} : blocked the bot")
+        return 400
+    except PeerIdInvalid:
+        print(f"{user_id} : user id invalid")
+        return 400
+    except Exception as e:
+        print(f"{user_id} : {e}")
+        return 500
+
+@app.on_message(filters.command("ban") & filters.user(OWNER_ID))
+async def ban_handler(_, message):
+    if len(message.command) < 2:
+        return await message.reply("Usage: /ban user_id")
+
+    try:
+        user_id = int(message.command[1])
+    except ValueError:
+        return await message.reply("Invalid user id")
+
+    await db.ban_user(user_id)
+
+    # Notify banned user
+    try:
+        await app.send_message(
+            user_id,
+            "🚫 **You are banned from using this bot.**\n\n"
+            "If you think this is a mistake, contact the admin."
+        )
+    except:
+        pass  # user may have blocked bot
+
+    await message.reply(f"✅ User `{user_id}` has been banned.")
+
+@app.on_message(filters.command("unban") & filters.user(OWNER_ID))
+async def unban_handler(_, message):
+    if len(message.command) < 2:
+        return await message.reply("Usage: /unban user_id")
+
+    try:
+        user_id = int(message.command[1])
+    except ValueError:
+        return await message.reply("Invalid user id")
+
+    await db.unban_user(user_id)
+
+    # Notify unbanned user
+    try:
+        await app.send_message(
+            user_id,
+            "✅ **You have been unbanned.**\n\n"
+            "You can now use the bot again."
+        )
+    except:
+        pass
+
+    await message.reply(f"✅ User `{user_id}` has been unbanned.")
+
 # ==========================================================================================================
 # URL HANDLER
 # ==========================================================================================================
 
 @app.on_message(filters.private & filters.text & ~filters.regex(r'^/'))
 async def url_handler(_, m):
+    if await db.is_banned(m.from_user.id):
+        return await m.reply("🚫 You are banned from using this bot.")
+    
     if not m.text.startswith("http"):
         return
-
+    
     vk = get_viewkey(m.text)
     if vk and vk not in INLINE_META:
         r = requests.get(m.text, headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
@@ -435,13 +632,11 @@ async def url_handler(_, m):
 # RUN
 # ==========================================================================================================
 
+async def main():
+    await app.start()
+    await app.send_message(OWNER_ID, "𝐁𝐎𝐓 𝐑𝐄𝐒𝐓𝐀𝐑𝐓𝐄𝐃 𝐒𝐔𝐂𝐂𝐄𝐒𝐒𝐅𝐔𝐋𝐋𝐘 ✅")
+    await idle()
+    await app.stop()
+
 if __name__ == "__main__":
-    app.start()
-
-    app.send_message(
-        chat_id=OWNER_ID,
-        text="𝐁𝐎𝐓 𝐑𝐄𝐒𝐓𝐀𝐑𝐓𝐄𝐃 𝐒𝐔𝐂𝐂𝐄𝐒𝐒𝐅𝐔𝐋𝐋𝐘 ✅"
-    )
-
-    idle()
-    app.stop()
+    asyncio.run(main())
