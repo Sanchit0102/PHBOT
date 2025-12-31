@@ -227,7 +227,10 @@ async def upload_hls_to_telegram(app: Client, message, user, user_id: int, url, 
     parse_mode=ParseMode.HTML
     )
     
-    await asyncio.sleep(0.8)
+    sent = await app.get_messages(
+               chat_id=sent.chat.id,
+               message_ids=sent.id
+           )
 
     try:
         log_msg = await sent.copy(chat_id=LOG_CHANNEL_ID)
