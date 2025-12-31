@@ -167,14 +167,11 @@ async def callback_handler(_, cb):
         except Exception:
             pass
 
-        page = info["page"]
-        meta = INLINE_META.get(page, {})
-        title = meta.get("title") or "Video"
-        duration = meta.get("duration") or "N/A"
-        poster = meta.get("poster") or info.get("poster")
-        
-        stream_url = info["videoUrl"]
+        title = info["title"]
+        duration = info["duration"]
+        poster = info["poster"]
         quality = f"{info['height']}p"
+        stream_url = info["videoUrl"]
         
         processing_msg = await app.send_message(
             chat_id,
@@ -263,7 +260,7 @@ async def url_handler(_, m):
     streams = extractor.extract_streaming_urls()
 
     if not streams:
-        await m.reply("No streams found")
+        await m.reply("No data found")
         return
 
     buttons = []
@@ -277,14 +274,14 @@ async def url_handler(_, m):
             continue
 
         sid = uuid4().hex[:12]
-        meta = INLINE_META.get(m.text, {})
+        meta = INLINE_META.get(m.text)
 
         STREAM_MAP[sid] = {
             "page": m.text,
             "videoUrl": s["videoUrl"],
-            "title": meta.get("title") or s.get("title") or "Video",
-            "duration": meta.get("duration") or "N/A",
-            "poster": meta.get("poster"),
+            "title": meta["title"] if meta else "Video",
+            "duration": meta["duration"] if meta else "N/A",
+            "poster": meta["poster"] if meta else None,
             "height": h,
         }
 
