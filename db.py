@@ -106,6 +106,11 @@ db = Database(MONGO_URI, DB_NAME)
 # =====================================================
 
 async def adds_user(bot, msg):
+    user_id = msg.from_user.id
+
+    if await db.is_user_exist(user_id):
+        return
+        
     await db.add_user(msg.from_user)
 
     if LOG_CHANNEL_ID:
