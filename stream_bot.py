@@ -16,7 +16,7 @@ from search import search
 from db import db, adds_user, LOG_CHANNEL_ID
 from bs4 import BeautifulSoup
 from pyrogram.enums import ParseMode
-from pyrogram import Client, filters, idle
+from pyrogram import Client, filters, idle, utils as pyroutils
 from extractor import StreamingURLExtractor
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from pyrogram.errors import FloodWait, InputUserDeactivated, UserIsBlocked, PeerIdInvalid
@@ -31,6 +31,8 @@ from pyrogram.types import (
 # ==========================================================================================================
 # CONFIG (ENV)
 # ==========================================================================================================
+pyroutils.MIN_CHAT_ID = -999999999999
+pyroutils.MIN_CHANNEL_ID = -100999999999999
 
 API_ID = int(os.environ["API_ID"])
 API_HASH = os.environ["API_HASH"]
@@ -634,7 +636,6 @@ async def url_handler(_, m):
 
 async def main():
     await app.start()
-    # force peer resolution
     try:
         await app.get_chat(LOG_CHANNEL_ID)
     except Exception as e:
@@ -647,7 +648,4 @@ async def main():
     await idle()
     await app.stop()
 
-if __name__ == "__main__":
-    asyncio.run(main())
-
-
+app.run(main())
