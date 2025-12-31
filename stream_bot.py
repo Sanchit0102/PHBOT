@@ -396,7 +396,6 @@ async def callback_handler(_, cb):
 async def start_handler(_, message):
     user = message.from_user
     await adds_user(app, message)
-    await db.add_user(user)
 
     # ban check
     if await db.is_banned(user.id):
