@@ -36,7 +36,7 @@ API_ID = int(os.environ["API_ID"])
 API_HASH = os.environ["API_HASH"]
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 OWNER_ID = int(os.environ.get("OWNER_ID", 1562935405))
-LOG_CHANNEL_ID = int(os.environ.get("LOG_CHANNEL_ID", -1002609521633))
+LOG_CHANNEL_ID = int(os.environ["LOG_CHANNEL_ID"].strip())
 
 STICKER_ID = "CAACAgEAAxkBAAK6kGlLoJrwgP6Y-FBjv1N0ZHJ_aohvAAI6AgACLeX5Ddv34qRmNpJZNgQ"
 START_IMAGE = "https://image.ashlynn.workers.dev/zixawvbuvrlejcxetoneaqhrikbgxugi"
