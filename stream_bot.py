@@ -132,7 +132,7 @@ async def download_poster(url: str):
 
 # ==========================================================================================================
 
-async def upload_hls_to_telegram(app: Client, message, user_id: int, url, title=None, duration=None, poster=None, quality=None):
+async def upload_hls_to_telegram(app: Client, message, user, user_id: int, url, title=None, duration=None, poster=None, quality=None):
     temp = tempfile.gettempdir()
     base = os.path.join(temp, f"dl_{uuid4().hex}")
 
@@ -240,9 +240,9 @@ async def upload_hls_to_telegram(app: Client, message, user_id: int, url, title=
         await app.send_message(
             LOG_CHANNEL_ID,
             text=(
-                f"Requested by: @{message.from_user.username or 'N/A'}\n"
-                f"Name: {message.from_user.first_name}\n"
-                f"User ID: {message.from_user.id}\n"
+                f"Requested by: @{user.username or 'N/A'}\n"
+                f"Name: {user.first_name}\n"
+                f"User ID: {user.id}\n"
                 f"File Code: {file_code}"
             ),
             reply_to_message_id=log_msg.id
@@ -361,7 +361,8 @@ async def callback_handler(_, cb):
 
         await upload_hls_to_telegram(
             app,
-            cb.message, 
+            cb.message,
+            cb.from_user,  
             cb.from_user.id,
             final_url,
             title=title.strip() if title else "N/A",
@@ -384,37 +385,51 @@ async def callback_handler(_, cb):
             pass
         STREAM_MAP.pop(data, None)  
 
-@app.on_callback_query(filters.regex("^GET_"))
-async def get_again(_, cb):
+@app.on_callback_query(filters.regex(r"^GET_"))
+async def get_file_again(_, cb):
     if cb.from_user.is_bot:
         return await cb.answer("Not allowed", show_alert=True)
 
     code = cb.data.replace("GET_", "")
-    row = await db.get_file(code)
+    data = await db.get_file(code)
 
-    if not row:
-        return await cb.answer("File not found", show_alert=True)
+    if not data:
+        return await cb.answer("File expired or unavailable", show_alert=True)
+
+    ss = None
+    delmsg = None
 
     try:
-        sent = await app.copy_message(
-            chat_id=cb.message.chat.id,
+        ss = await app.copy_message(
+            chat_id=cb.from_user.id,
             from_chat_id=LOG_CHANNEL_ID,
-            message_id=row["log_msg_id"]
+            message_id=data["log_msg_id"]
         )
+        await cb.answer("File sent again ✅")
+
+        delmsg = await app.send_message(
+            cb.from_user.id,
+            text=(
+                f"❗️❗️❗️ <b>IMPORTANT</b> ❗️❗️❗️\n\n"
+                f"ᴛʜɪꜱ ꜰɪʟᴇ / ᴠɪᴅᴇᴏ ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ɪɴ "
+                f"<b>{DELETE_TIME // 60} Mɪɴᴜᴛᴇꜱ</b> ⏰\n\n"
+                f"ᴘʟᴇᴀꜱᴇ ꜰᴏʀᴡᴀʀᴅ ᴛʜɪꜱ ꜰɪʟᴇ ᴛᴏ ꜱᴏᴍᴇᴡʜᴇʀᴇ ᴇʟꜱᴇ."
+            ),
+            parse_mode=ParseMode.HTML
+        )
+        await asyncio.sleep(DELETE_TIME)
+        
     except PeerIdInvalid:
-        await db.delete_file(code)
-        return await cb.answer("File expired", show_alert=True)
+        return await cb.answer("Unable to fetch file", show_alert=True)
 
-    delmsg = await app.send_message(
-    cb.message.chat.id,
-    text=f"❗️❗️❗️ <b>IMPORTANT</b> ❗️❗️❗️\n\nᴛʜɪꜱ ꜰɪʟᴇ / ᴠɪᴅᴇᴏ ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ɪɴ <b>{DELETE_TIME // 60} Mɪɴᴜᴛᴇꜱ</b> ⏰ (ᴅᴜᴇ ᴛᴏ ᴄᴏᴘʏʀɪɢʜᴛ ɪꜱꜱᴜᴇꜱ).\n\nᴘʟᴇᴀꜱᴇ ꜰᴏʀᴡᴀʀᴅ ᴛʜɪꜱ ꜰɪʟᴇ ᴛᴏ ꜱᴏᴍᴇᴡʜᴇʀᴇ ᴇʟꜱᴇ ᴀɴᴅ ꜱᴛᴀʀᴛ ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ᴛʜᴇʀᴇ.",
-    parse_mode=ParseMode.HTML
-    )
-
-    await asyncio.sleep(DELETE_TIME)
-    await sent.delete()
-    await delmsg.delete()
-    await cb.answer()
+    finally:
+        try:
+            if ss:
+                await ss.delete()
+            if delmsg:
+                await delmsg.delete()
+        except Exception:
+            pass
 
 # ==========================================================================================================
 # START
