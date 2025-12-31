@@ -226,11 +226,7 @@ async def upload_hls_to_telegram(app: Client, message, url, title=None, duration
     parse_mode=ParseMode.HTML
     )
     
-    log_msg = await app.forward_messages(
-            chat_id=LOG_CHANNEL_ID,
-            from_chat_id=user_id,
-            message_ids=sent.id
-        )
+    log_msg = await sent.copy(chat_id=LOG_CHANNEL_ID)
 
     await app.send_message(
         LOG_CHANNEL_ID,
@@ -379,11 +375,15 @@ async def get_again(_, cb):
     if not row:
         return await cb.answer("File not found", show_alert=True)
 
-    sent = await app.forward_messages(
-        cb.message.chat.id,
-        LOG_CHANNEL_ID,
-        row["log_msg_id"]
-    )
+    try:
+        sent = await app.copy_message(
+            chat_id=cb.message.chat.id,
+            from_chat_id=LOG_CHANNEL_ID,
+            message_id=row["log_msg_id"]
+        )
+    except PeerIdInvalid:
+        await db.delete_file(code)
+        return await cb.answer("File expired", show_alert=True)
 
     delmsg = await app.send_message(
     cb.message.chat.id,
@@ -412,11 +412,12 @@ async def start_handler(_, message):
         row = await db.get_file(code)
 
         if row:
-            sent = await app.forward_messages(
-                message.chat.id,
-                LOG_CHANNEL_ID,
-                row["log_msg_id"]
+            sent = await app.copy_message(
+                chat_id=message.chat.id,
+                from_chat_id=LOG_CHANNEL_ID,
+                message_id=row["log_msg_id"]
             )
+
             delmsg = await app.send_message(
                 message.chat.id,
                 text=f"❗️❗️❗️ <b>IMPORTANT</b> ❗️❗️❗️\n\nᴛʜɪꜱ ꜰɪʟᴇ / ᴠɪᴅᴇᴏ ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ɪɴ <b>{DELETE_TIME // 60} Mɪɴᴜᴛᴇꜱ</b> ⏰ (ᴅᴜᴇ ᴛᴏ ᴄᴏᴘʏʀɪɢʜᴛ ɪꜱꜱᴜᴇꜱ).\n\nᴘʟᴇᴀꜱᴇ ꜰᴏʀᴡᴀʀᴅ ᴛʜɪꜱ ꜰɪʟᴇ ᴛᴏ ꜱᴏᴍᴇᴡʜᴇʀᴇ ᴇʟꜱᴇ ᴀɴᴅ ꜱᴛᴀʀᴛ ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ᴛʜᴇʀᴇ.",
@@ -633,6 +634,12 @@ async def url_handler(_, m):
 
 async def main():
     await app.start()
+    # force peer resolution
+    try:
+        await app.get_chat(LOG_CHANNEL_ID)
+    except Exception as e:
+        raise RuntimeError(f"Invalid LOG_CHANNEL_ID: {e}")
+
     await app.send_message(
         OWNER_ID,
         "𝐁𝐎𝐓 𝐑𝐄𝐒𝐓𝐀𝐑𝐓𝐄𝐃 𝐒𝐔𝐂𝐂𝐄𝐒𝐒𝐅𝐔𝐋𝐋𝐘 ✅"
