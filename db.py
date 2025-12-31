@@ -1,72 +1,122 @@
-import os
-from datetime import datetime
-from pymongo import MongoClient
+import motor.motor_asyncio
+import datetime
 
 MONGO_URI = os.environ["MONGO_URI"]
 DB_NAME = os.environ.get("DB_NAME", "telegram_bot")
+LOG_CHANNEL_ID = int(os.environ.get("LOG_CHANNEL_ID", -1002609521633))
+LOG_TEXT = """<i><u>👁️‍🗨️USER DETAILS</u>
 
-client = MongoClient(MONGO_URI)
-db = client[DB_NAME]
+○ ID : <code>{id}</code>
+○ DC : <code>{dc_id}</code>
+○ First Name : <code>{first_name}<code>
+○ UserName : @{username}
 
-FILES = db.files
-USERS = db.users
+By = {bot}</i>"""
 
-# =========================
-# USER FUNCTIONS
-# =========================
+class Database:
 
-def add_user(user_id: int, username: str | None, name: str):
-    USERS.update_one(
-        {"_id": user_id},
-        {
-            "$setOnInsert": {
-                "username": username,
-                "name": name,
-                "banned": False,
-                "joined_at": datetime.utcnow()
-            }
-        },
-        upsert=True
-    )
+    def __init__(self, uri, database_name):
+        self._client = motor.motor_asyncio.AsyncIOMotorClient(uri)
+        self.db = self._client[database_name]
+
+        self.users = self.db.users
+        self.files = self.db.files
+
+    # =====================================================
+    # USER METHODS
+    # =====================================================
+
+    def new_user(self, user):
+        return {
+            "_id": user.id,
+            "username": user.username,
+            "name": user.first_name,
+            "banned": False,
+            "joined_at": datetime.datetime.utcnow()
+        }
+
+    async def add_user(self, user):
+        if not await self.is_user_exist(user.id):
+            await self.users.insert_one(self.new_user(user))
+
+    async def is_user_exist(self, user_id: int) -> bool:
+        user = await self.users.find_one({"_id": int(user_id)})
+        return True if user else False
+
+    async def is_banned(self, user_id: int) -> bool:
+        user = await self.users.find_one(
+            {"_id": int(user_id)},
+            {"banned": 1}
+        )
+        return bool(user and user.get("banned"))
+
+    async def ban_user(self, user_id: int):
+        await self.users.update_one(
+            {"_id": int(user_id)},
+            {"$set": {"banned": True}},
+            upsert=True
+        )
+
+    async def unban_user(self, user_id: int):
+        await self.users.update_one(
+            {"_id": int(user_id)},
+            {"$set": {"banned": False}}
+        )
+
+    async def total_users_count(self) -> int:
+        return await self.users.count_documents({})
+
+    async def get_all_users(self):
+        return self.users.find({"banned": False}, {"_id": 1})
+
+    async def delete_user(self, user_id: int):
+        await self.users.delete_one({"_id": int(user_id)})
+
+    # =====================================================
+    # FILE METHODS
+    # =====================================================
+
+    async def save_file(self, code: str, log_message_id: int):
+        await self.files.update_one(
+            {"_id": code},
+            {
+                "$set": {
+                    "log_msg_id": log_message_id,
+                    "created_at": datetime.datetime.utcnow()
+                }
+            },
+            upsert=True
+        )
+
+    async def get_file(self, code: str):
+        return await self.files.find_one({"_id": code})
+
+    async def delete_file(self, code: str):
+        await self.files.delete_one({"_id": code})
 
 
-def is_banned(user_id: int) -> bool:
-    user = USERS.find_one({"_id": user_id}, {"banned": 1})
-    return bool(user and user.get("banned"))
+# =====================================================
+# DATABASE INSTANCE
+# =====================================================
+
+db = Database(DB_URL, DB_NAME)
 
 
-def ban_user(user_id: int):
-    USERS.update_one({"_id": user_id}, {"$set": {"banned": True}})
+# =====================================================
+# AUTO USER LOGGER (OPTIONAL)
+# =====================================================
 
+async def adds_user(bot, msg):
+    await db.add_user(msg.from_user)
 
-def unban_user(user_id: int):
-    USERS.update_one({"_id": user_id}, {"$set": {"banned": False}})
-
-
-def get_all_active_users():
-    return USERS.find({"banned": False}, {"_id": 1})
-
-
-# =========================
-# FILE FUNCTIONS
-# =========================
-
-def save_file(code: str, log_message_id: int):
-    FILES.update_one(
-        {"_id": code},
-        {
-            "$set": {
-                "log_msg_id": log_message_id,
-                "created_at": datetime.utcnow()
-            }
-        },
-        upsert=True
-    )
-
-
-def get_file(code: str):
-    return FILES.find_one({"_id": code})
-
-
-def delete_file(code: str):
-    FILES.delete_one({"_id": code})
+    if LOG_CHANNEL_ID:
+        await bot.send_message(
+            LOG_CHANNEL_ID,
+            text=LOG_TEXT.format(
+                id=msg.from_user.id,
+                dc_id=msg.from_user.dc_id,
+                first_name=msg.from_user.first_name,
+                username=msg.from_user.username,
+                bot=bot.mention
+            )
+        )
