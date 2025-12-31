@@ -10,9 +10,7 @@ LOG_TEXT = """<i><u>👁️‍🗨️USER DETAILS</u>
 ○ ID : <code>{id}</code>
 ○ DC : <code>{dc_id}</code>
 ○ First Name : <code>{first_name}<code>
-○ UserName : @{username}
-
-By = {bot}</i>"""
+○ UserName : @{username}</i>"""
 
 class Database:
 
@@ -118,6 +116,5 @@ async def adds_user(bot, msg):
                 dc_id=msg.from_user.dc_id,
                 first_name=msg.from_user.first_name,
                 username=msg.from_user.username,
-                bot=bot.mention
             )
         )
