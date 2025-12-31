@@ -9,7 +9,7 @@ LOG_TEXT = """<i><u>👁️‍🗨️USER DETAILS</u>
 
 ○ ID : <code>{id}</code>
 ○ DC : <code>{dc_id}</code>
-○ First Name : <code>{first_name}<code>
+○ First Name : <code>{first_name}</code>
 ○ UserName : @{username}</i>"""
 
 class Database:
@@ -35,9 +35,12 @@ class Database:
         }
 
     async def add_user(self, user):
-        if not await self.is_user_exist(user.id):
-            await self.users.insert_one(self.new_user(user))
-
+        await self.users.update_one(
+            {"_id": user.id},
+            {"$setOnInsert": self.new_user(user)},
+            upsert=True
+        )
+        
     async def is_user_exist(self, user_id: int) -> bool:
         user = await self.users.find_one({"_id": int(user_id)})
         return True if user else False
