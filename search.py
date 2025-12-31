@@ -1,7 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 
-BASE = "https://de.pornhub.org"
+BASE = "https://www.pornhub.com"
 HEADERS = {"User-Agent": "Mozilla/5.0"}
 
 def search(query, limit=10):
