@@ -117,7 +117,7 @@ async def upload_hls_to_telegram(app: Client, message, url, title=None, duration
     await sent.edit_caption(
         cap(
             title=title,
-            duration=duration,
+            duration=int(duration.split(":")[0]) * 60 + int(duration.split(":")[1]) if ":" in duration else None,
             quality_url=url,
             bot_username=me.username or "THE_DS_OFFICIAL_BOT",
             filesize=filesize,
