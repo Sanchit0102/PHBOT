@@ -7,6 +7,7 @@ import shutil
 import logging
 import yt_dlp
 from uuid import uuid4
+from PIL import Image
 from pyrogram.enums import ParseMode
 from pyrogram import Client
 
@@ -93,11 +94,18 @@ async def upload_hls_to_telegram(app: Client, message, url, title=None, duration
     video = os.path.join(temp, files[0])
     me = await app.get_me()
     thumb_path = await download_poster(poster)
+    if thumb_path:
+        try:
+            img = Image.open(thumb_path)
+            img.thumbnail((320, 320))
+            img.save(thumb_path, "JPEG", quality=85)
+        except Exception:
+            thumb_path = None
     
     sent = await app.send_video(
         chat_id=message.chat.id,
         video=video,
-        caption=cap(title, duration, url, me.username or "THE_DS_OFFICIAL_BOT","Loading...", quality),
+        caption="Loading...",
         supports_streaming=True,
         thumb=thumb_path,
         parse_mode=ParseMode.HTML
