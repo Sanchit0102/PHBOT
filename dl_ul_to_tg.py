@@ -10,9 +10,8 @@ from uuid import uuid4
 from PIL import Image
 from pyrogram.enums import ParseMode
 from pyrogram import Client
-from stream_bot import USER_BUSY
 
-DELETE_TIME = int(os.environ.get("DELETE_TIME", "900"))
+DELETE_TIME = int(os.environ.get("DELETE_TIME", "300"))
 
 def cap(title, duration, quality_url, bot_username, filesize, quality):
     title = html.escape(title or "Video")
@@ -133,8 +132,6 @@ async def upload_hls_to_telegram(app: Client, message, url, title=None, duration
     
     if thumb_path and os.path.exists(thumb_path):
         os.remove(thumb_path)
-
-    USER_BUSY.discard(message.chat.id)
     
     await asyncio.sleep(DELETE_TIME)
     
