@@ -100,7 +100,7 @@ class Database:
 # DATABASE INSTANCE
 # =====================================================
 
-db = Database(DB_URL, DB_NAME)
+db = Database(MONGO_URI, DB_NAME)
 
 
 # =====================================================
