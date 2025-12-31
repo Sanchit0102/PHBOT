@@ -1,5 +1,6 @@
 import motor.motor_asyncio
 import datetime
+import os
 
 MONGO_URI = os.environ["MONGO_URI"]
 DB_NAME = os.environ.get("DB_NAME", "telegram_bot")
