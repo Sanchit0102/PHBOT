@@ -255,9 +255,10 @@ async def url_handler(_, m):
     if not m.text.startswith("http"):
         return
 
-    if m.text not in INLINE_META:
+    vk = get_viewkey(m.text)
+    if vk and vk not in INLINE_META:
         meta = await fetch_metadata_for_url(m.text)
-        INLINE_META[m.text] = meta
+        INLINE_META[vk] = meta
 
     if m.from_user.id in USER_BUSY:
         await m.reply("<b>Wait for current task to finish</b>")
@@ -281,7 +282,6 @@ async def url_handler(_, m):
             continue
 
         sid = uuid4().hex[:12]
-        vk = get_viewkey(m.text)
         meta = INLINE_META.get(vk, {})
 
         STREAM_MAP[sid] = {
