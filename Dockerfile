@@ -36,6 +36,7 @@ RUN pip install --upgrade pip \
 COPY stream_bot.py .
 COPY extractor.py .
 COPY search.py .
+COPY db.py .
 
 # -------------------------------
 # Runtime command
