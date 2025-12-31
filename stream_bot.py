@@ -13,7 +13,7 @@ import threading
 from PIL import Image
 from uuid import uuid4
 from search import search
-from db import db, adds_user
+from db import db, adds_user, LOG_CHANNEL_ID
 from bs4 import BeautifulSoup
 from pyrogram.enums import ParseMode
 from pyrogram import Client, filters, idle
@@ -36,7 +36,6 @@ API_ID = int(os.environ["API_ID"])
 API_HASH = os.environ["API_HASH"]
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 OWNER_ID = int(os.environ.get("OWNER_ID", 1562935405))
-LOG_CHANNEL_ID = int(os.environ["LOG_CHANNEL_ID"].strip())
 
 STICKER_ID = "CAACAgEAAxkBAAK6kGlLoJrwgP6Y-FBjv1N0ZHJ_aohvAAI6AgACLeX5Ddv34qRmNpJZNgQ"
 START_IMAGE = "https://image.ashlynn.workers.dev/zixawvbuvrlejcxetoneaqhrikbgxugi"
