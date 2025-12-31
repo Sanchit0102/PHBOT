@@ -212,7 +212,7 @@ async def upload_hls_to_telegram(app: Client, message, url, title=None, duration
     await asyncio.sleep(DELETE_TIME)
     
     await sent.delete()
-    await delmsg.edit_text("ʏᴏᴜʀ ᴠɪᴅᴇᴏ / ꜰɪʟᴇ ɪꜱ ꜱᴜᴄᴄᴇꜱꜱꜰᴜʟʟʏ ᴅᴇʟᴇᴛᴇᴅ !!")
+    await delmsg.edit_text("<b>ʏᴏᴜʀ ᴠɪᴅᴇᴏ / ꜰɪʟᴇ ɪꜱ ꜱᴜᴄᴄᴇꜱꜱꜰᴜʟʟʏ ᴅᴇʟᴇᴛᴇᴅ !!</b>")
     
     try:
         os.remove(video)
