@@ -19,7 +19,7 @@ from pyrogram.enums import ParseMode
 from pyrogram import Client, filters, idle, utils as pyroutils
 from extractor import StreamingURLExtractor
 from http.server import HTTPServer, BaseHTTPRequestHandler
-from pyrogram.errors import FloodWait, InputUserDeactivated, UserIsBlocked, PeerIdInvalid
+from pyrogram.errors import FloodWait, InputUserDeactivated, UserIsBlocked, PeerIdInvalid, UserIsBot
 from pyrogram.types import (
     Message,
     InlineKeyboardMarkup,
@@ -133,6 +133,10 @@ async def download_poster(url: str):
 # ==========================================================================================================
 
 async def upload_hls_to_telegram(app: Client, message, url, title=None, duration=None, poster=None, quality=None):
+    if message.from_user and message.from_user.is_bot:
+        logging.warning("Blocked attempt to send media to a bot")
+        return
+
     temp = tempfile.gettempdir()
     base = os.path.join(temp, f"dl_{uuid4().hex}")
 
@@ -228,18 +232,25 @@ async def upload_hls_to_telegram(app: Client, message, url, title=None, duration
     parse_mode=ParseMode.HTML
     )
     
-    log_msg = await sent.copy(chat_id=LOG_CHANNEL_ID)
+    try:
+        log_msg = await sent.copy(chat_id=LOG_CHANNEL_ID)
+    except UserIsBot:
+        logging.error("LOG_CHANNEL_ID is a bot or invalid")
+        return
 
-    await app.send_message(
-        LOG_CHANNEL_ID,
-        text=(
-            f"Requested by: @{message.from_user.username or 'N/A'}\n"
-            f"Name: {message.from_user.first_name}\n"
-            f"User ID: {message.from_user.id}\n"
-            f"File Code: {file_code}"
-        ),
-        reply_to_message_id=log_msg.id
-    )
+    try:
+        await app.send_message(
+            LOG_CHANNEL_ID,
+            text=(
+                f"Requested by: @{message.from_user.username or 'N/A'}\n"
+                f"Name: {message.from_user.first_name}\n"
+                f"User ID: {message.from_user.id}\n"
+                f"File Code: {file_code}"
+            ),
+            reply_to_message_id=log_msg.id
+        )
+    except UserIsBot:
+        logging.error("Cannot send log message to bot")
 
     await db.save_file(file_code, log_msg.id)
 
@@ -305,6 +316,9 @@ async def inline_query_handler(_, q):
 
 @app.on_callback_query()
 async def callback_handler(_, cb):
+    if cb.from_user.is_bot:
+        return await cb.answer("Bots are not allowed", show_alert=True)
+
     data = cb.data
     if data not in STREAM_MAP:
         return
