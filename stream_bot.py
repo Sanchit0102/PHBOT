@@ -229,7 +229,7 @@ async def upload_hls_to_telegram(app: Client, message, url, title=None, duration
     
     log_msg = await app.forward_messages(
             chat_id=LOG_CHANNEL_ID,
-            from_chat_id=sent.chat.id,
+            from_chat_id=user_id,
             message_ids=sent.id
         )
 
@@ -634,7 +634,10 @@ async def url_handler(_, m):
 
 if __name__ == "__main__":
     app.start()
-    app.send_message(OWNER_ID, "𝐁𝐎𝐓 𝐑𝐄𝐒𝐓𝐀𝐑𝐓𝐄𝐃 𝐒𝐔𝐂𝐂𝐄𝐒𝐒𝐅𝐔𝐋𝐋𝐘 ✅")
+    app.loop.run_until_complete(
+        app.send_message(OWNER_ID, "𝐁𝐎𝐓 𝐑𝐄𝐒𝐓𝐀𝐑𝐓𝐄𝐃 𝐒𝐔𝐂𝐂𝐄𝐒𝐒𝐅𝐔𝐋𝐋𝐘 ✅")
+    )
     idle()
     app.stop()
+
 
