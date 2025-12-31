@@ -58,6 +58,10 @@ async def fetch_metadata_for_url(url: str):
         "duration": None,
         "poster": None,
     }
+
+def get_viewkey(url: str):
+    m = re.search(r"viewkey=([a-zA-Z0-9]+)", url)
+    return m.group(1) if m else None
     
 # ======================================================================================
 # Dummy HTTP server (ONLY for Render Web Service)
@@ -120,11 +124,13 @@ async def inline_query_handler(_, q):
         duration = r.get("duration") or "N/A"
         poster = r.get("poster")
 
-        INLINE_META[url] = {
-            "title": title,
-            "duration": duration,
-            "poster": poster,
-        }
+        vk = get_viewkey(url)
+        if vk:
+            INLINE_META[vk] = {
+                "title": title,
+                "duration": duration,
+                "poster": poster,
+            }
 
         results.append(
             InlineQueryResultArticle(
@@ -275,14 +281,15 @@ async def url_handler(_, m):
             continue
 
         sid = uuid4().hex[:12]
-        meta = INLINE_META.get(m.text)
+        vk = get_viewkey(m.text)
+        meta = INLINE_META.get(vk, {})
 
         STREAM_MAP[sid] = {
             "page": m.text,
             "videoUrl": s["videoUrl"],
-            "title": meta["title"] if meta else "Video",
-            "duration": meta["duration"] if meta else "N/A",
-            "poster": meta["poster"] if meta else None,
+            "title": meta.get("title") if meta else "Video",
+            "duration": meta.get("duration") if meta else "N/A",
+            "poster": meta.get("poster") if meta else None,
             "height": h,
         }
 
