@@ -34,7 +34,6 @@ RUN pip install --upgrade pip \
 # Copy bot source
 # -------------------------------
 COPY stream_bot.py .
-COPY dl_ul_to_tg.py .
 COPY extractor.py .
 COPY search.py .
 
