@@ -227,11 +227,14 @@ async def upload_hls_to_telegram(app: Client, message, user_id: int, url, title=
     parse_mode=ParseMode.HTML
     )
     
+    await asyncio.sleep(0.8)
+
     try:
         log_msg = await sent.copy(chat_id=LOG_CHANNEL_ID)
     except (UserIsBot, PeerIdInvalid):
         logging.error("LOG_CHANNEL_ID is a bot or invalid")
-        return
+        log_msg = None
+    
 
     try:
         await app.send_message(
@@ -247,7 +250,8 @@ async def upload_hls_to_telegram(app: Client, message, user_id: int, url, title=
     except UserIsBot:
         logging.error("Cannot send log message to bot")
 
-    await db.save_file(file_code, log_msg.id)
+    if log_msg:
+        await db.save_file(file_code, log_msg.id)
 
     if thumb_path and os.path.exists(thumb_path):
         os.remove(thumb_path)
