@@ -4,7 +4,7 @@ import os
 
 MONGO_URI = os.environ["MONGO_URI"]
 DB_NAME = os.environ.get("DB_NAME", "ph_telegram_bot")
-LOG_CHANNEL_ID = os.environ["LOG_CHANNEL_ID"].strip()
+LOG_CHANNEL_ID = int(os.environ["LOG_CHANNEL_ID"])
 LOG_TEXT = """<i><u>👁️‍🗨️USER DETAILS</u>
 
 ○ ID : <code>{id}</code>
