@@ -19,22 +19,6 @@ def cap(title, duration, quality_url, bot_username, filesize, quality):
     quality_url = html.escape(quality_url)
 
     return (
-        f"<blockquote>𝖥𝗂𝗅𝖾 𝖭𝖺𝗆𝖾: <code>{title}</code></blockquote>\n\n"
-        f"<blockquote>"
-        f"𝖶𝖺𝗍𝖼𝗁 𝖮𝗇𝗅𝗂𝗇𝖾: <a href=\"{quality_url}\">Click Here</a>\n"
-        f"𝖣𝗎𝗋𝖺𝗍𝗂𝗈𝗇: {duration} 𝖬𝗂𝗇𝗎𝗍𝖾𝗌\n"
-        f"𝖥𝗂𝗅𝖾 𝖲𝗂𝗓𝖾: {filesize}\n"
-        f"𝖰𝗎𝖺𝗅𝗂𝗍𝗒: {quality}"
-        f"</blockquote>\n\n"
-        f"<b>⚡ 𝖴𝗉𝗅𝗈𝖺𝖽 𝖡𝗒 - <a href=\"https://t.me/{html.escape(bot_username)}\">𝖣𝖲𝖠𝖽𝗎𝗅𝗍𝖡𝗈𝗍 🔞</a></b>"
-       )
-
-def cap(title, duration, quality_url, bot_username, filesize, quality):
-    title = html.escape(title or "Video")
-    duration = duration or "N/A"
-    quality_url = html.escape(quality_url)
-
-    return (
         f"📄 <b>𝖥𝗂𝗅𝖾 𝖭𝖺𝗆𝖾:</b> <code>{title}</code>\n\n"
         f"🔗 <b>𝖶𝖺𝗍𝖼𝗁 𝖮𝗇𝗅𝗂𝗇𝖾:</b> <a href=\"{quality_url}\">Click Here</a>\n"
         f"⏰ <b>𝖣𝗎𝗋𝖺𝗍𝗂𝗈𝗇:</b> {duration}\n"
@@ -101,11 +85,19 @@ async def upload_hls_to_telegram(app: Client, message, url, title=None, duration
             img.save(thumb_path, "JPEG", quality=85)
         except Exception:
             thumb_path = None
+
+    duration_str = duration 
+    duration_sec = None
+    
+    if duration and ":" in duration:
+        m, s = duration.split(":")
+        duration_sec = int(m) * 60 + int(s)
     
     sent = await app.send_video(
         chat_id=message.chat.id,
         video=video,
         caption="Loading...",
+        duration=duration_sec,
         supports_streaming=True,
         thumb=thumb_path,
         parse_mode=ParseMode.HTML
@@ -117,7 +109,7 @@ async def upload_hls_to_telegram(app: Client, message, url, title=None, duration
     await sent.edit_caption(
         cap(
             title=title,
-            duration=int(duration.split(":")[0]) * 60 + int(duration.split(":")[1]) if ":" in duration else None,
+            duration=duration_str,
             quality_url=url,
             bot_username=me.username or "THE_DS_OFFICIAL_BOT",
             filesize=filesize,
