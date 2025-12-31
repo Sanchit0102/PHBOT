@@ -160,9 +160,7 @@ async def upload_hls_to_telegram(app: Client, message, user, user_id: int, url, 
 
     if not video or not os.path.exists(video):
         raise RuntimeError("Download failed: video file not created")
-    
-    files = [f for f in os.listdir(temp) if f.startswith(os.path.basename(base))]
-    video = os.path.join(temp, files[0])
+
     me = await app.get_me()
     bot_username = me.username
 
