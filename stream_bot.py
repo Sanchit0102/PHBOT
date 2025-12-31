@@ -175,7 +175,7 @@ async def upload_hls_to_telegram(app: Client, message, user, user_id: int, url, 
    
     getfile_btn = InlineKeyboardMarkup(
         [[
-            InlineKeyboardButton("🔁 Get File Again", callback_data=f"GET_{file_code}")
+            InlineKeyboardButton("🔁 Get File Again", url=f"https://t.me/{bot_username}?start=DS_{file_code}")
         ]]
         )
 
@@ -384,52 +384,6 @@ async def callback_handler(_, cb):
         except Exception:
             pass
         STREAM_MAP.pop(data, None)  
-
-@app.on_callback_query(filters.regex(r"^GET_"))
-async def get_file_again(_, cb):
-    if cb.from_user.is_bot:
-        return await cb.answer("Not allowed", show_alert=True)
-
-    code = cb.data.replace("GET_", "")
-    data = await db.get_file(code)
-
-    if not data:
-        return await cb.answer("File expired or unavailable", show_alert=True)
-
-    ss = None
-    delmsg = None
-
-    try:
-        ss = await app.copy_message(
-            chat_id=cb.from_user.id,
-            from_chat_id=LOG_CHANNEL_ID,
-            message_id=data["log_msg_id"]
-        )
-        await cb.answer("File sent again ✅")
-
-        delmsg = await app.send_message(
-            cb.from_user.id,
-            text=(
-                f"❗️❗️❗️ <b>IMPORTANT</b> ❗️❗️❗️\n\n"
-                f"ᴛʜɪꜱ ꜰɪʟᴇ / ᴠɪᴅᴇᴏ ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ɪɴ "
-                f"<b>{DELETE_TIME // 60} Mɪɴᴜᴛᴇꜱ</b> ⏰\n\n"
-                f"ᴘʟᴇᴀꜱᴇ ꜰᴏʀᴡᴀʀᴅ ᴛʜɪꜱ ꜰɪʟᴇ ᴛᴏ ꜱᴏᴍᴇᴡʜᴇʀᴇ ᴇʟꜱᴇ."
-            ),
-            parse_mode=ParseMode.HTML
-        )
-        await asyncio.sleep(DELETE_TIME)
-        
-    except PeerIdInvalid:
-        return await cb.answer("Unable to fetch file", show_alert=True)
-
-    finally:
-        try:
-            if ss:
-                await ss.delete()
-            if delmsg:
-                await delmsg.delete()
-        except Exception:
-            pass
 
 # ==========================================================================================================
 # START
