@@ -199,6 +199,7 @@ async def callback_handler(_, cb):
                 await sticker_msg.delete()
         except Exception:
             pass
+        USER_BUSY.discard(user_id)
         STREAM_MAP.pop(data, None)  
 # ==========================================================================================================
 # START
