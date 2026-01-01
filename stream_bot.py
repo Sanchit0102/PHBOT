@@ -443,7 +443,7 @@ async def start_handler(_, message):
 <code>⚠ Tʜᴇ Bᴏᴛ Cᴏɴᴛᴀɪɴs 18+ Cᴏɴᴛᴇɴᴛ. Kɪɴᴅʟʏ Aᴄᴄᴇss ɪᴛ Aᴛ Yᴏᴜʀ Oᴡɴ Rɪsᴋ. Cʜɪʟᴅʀᴇɴ Pʟᴇᴀsᴇ Sᴛᴀʏ Aᴡᴀʏ. Wᴇ ᴅᴏɴ'ᴛ ɪɴᴛᴇɴᴅ ᴛᴏ sᴘʀᴇᴀᴅ Pᴏʀɴᴏɢʀᴀᴘʜʏ. Tʜɪs ɪs ᴀᴜᴛᴏᴍᴀᴛᴇᴅ ᴀɴᴅ ᴘᴜʀᴘᴏsᴇ-ʙᴀsᴇᴅ.</code>
 
 ━━━━━━━━━━━━━━━━━━━━━
-<b>👨🏻‍💻 Dᴇᴠᴇʟᴏᴘᴇᴅ Bʏ @THE_DS_OFFICIAL</b>
+<b>👨🏻‍💻 Dᴇᴠᴇʟᴏᴘᴇᴅ Bʏ @Developer_DM_Bot</b>
 """
 
     keyboard = InlineKeyboardMarkup(
