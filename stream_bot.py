@@ -100,7 +100,7 @@ def cap(title, duration, quality_url, bot_username, filesize, quality, source):
 
     return (
         f"📄 <b>𝖥𝗂𝗅𝖾 𝖭𝖺𝗆𝖾:</b> <code>{title}</code>\n\n"
-        f"🔗 <b>𝖶𝖺𝗍𝖼𝗁 𝖮𝗇𝗅𝗂𝗇𝖾:</b> <a href=\"{quality_url}\">Click Here</a>\n"
+        f"🔗 <b>𝖶𝖺𝗍𝖼𝗁 𝖮𝗇𝗅𝗂𝗇𝖾:</b> <a href='https://ds-streaming.vercel.app?url={quality_url}'>Click Here</a>\n"
         f"⏰ <b>𝖣𝗎𝗋𝖺𝗍𝗂𝗈𝗇:</b> {duration}\n"
         f"📦 <b>𝖥𝗂𝗅𝖾 𝖲𝗂𝗓𝖾:</b> {filesize}\n"
         f"🎞 <b>𝖰𝗎𝖺𝗅𝗂𝗍𝗒:</b> {quality}\n"
@@ -186,6 +186,7 @@ async def upload_hls_to_telegram(app: Client, message, user, user_id: int, url, 
 
     share_btn = InlineKeyboardMarkup(
         [[  
+            
             InlineKeyboardButton("🔗 Share Video 🔗", url=f"https://t.me/share/url?url=https://t.me/{bot_username}?start=DS_{file_code}")
         ]]
         )
