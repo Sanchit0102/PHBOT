@@ -102,7 +102,7 @@ def cap(title, duration, quality_url, bot_username, filesize, quality, source):
     
     return (
         f"📄 <b>𝖥𝗂𝗅𝖾 𝖭𝖺𝗆𝖾:</b> <code>{title}</code>\n\n"
-        f"🔗 <b>𝖶𝖺𝗍𝖼𝗁 𝖮𝗇𝗅𝗂𝗇𝖾:</b> <a href='https://ds-streaming.vercel.app?url={safe_url}'>Click Here</a>\n"
+        f"🔗 <b>𝖶𝖺𝗍𝖼𝗁 𝖮𝗇𝗅𝗂𝗇𝖾:</b> <a href='https://ds-streaming.vercel.app/?url={safe_url}'>Click Here</a>\n"
         f"⏰ <b>𝖣𝗎𝗋𝖺𝗍𝗂𝗈𝗇:</b> {duration}\n"
         f"📦 <b>𝖥𝗂𝗅𝖾 𝖲𝗂𝗓𝖾:</b> {filesize}\n"
         f"🎞 <b>𝖰𝗎𝖺𝗅𝗂𝗍𝗒:</b> {quality}\n"
