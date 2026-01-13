@@ -15,6 +15,7 @@ from uuid import uuid4
 from search import search
 from db import db, adds_user, LOG_CHANNEL_ID
 from bs4 import BeautifulSoup
+from urllib.parse import quote
 from pyrogram.enums import ParseMode
 from pyrogram import Client, filters, idle, utils as pyroutils
 from extractor import StreamingURLExtractor
@@ -97,10 +98,11 @@ def cap(title, duration, quality_url, bot_username, filesize, quality, source):
     title = html.escape(title or "Video")
     duration = duration or "N/A"
     quality_url = html.escape(quality_url)
-
+    safe_url = quote(quality_url, safe="")
+    
     return (
         f"📄 <b>𝖥𝗂𝗅𝖾 𝖭𝖺𝗆𝖾:</b> <code>{title}</code>\n\n"
-        f"🔗 <b>𝖶𝖺𝗍𝖼𝗁 𝖮𝗇𝗅𝗂𝗇𝖾:</b> <a href='https://ds-streaming.vercel.app?url={quality_url}'>Click Here</a>\n"
+        f"🔗 <b>𝖶𝖺𝗍𝖼𝗁 𝖮𝗇𝗅𝗂𝗇𝖾:</b> <a href='https://ds-streaming.vercel.app?url={safe_url}'>Click Here</a>\n"
         f"⏰ <b>𝖣𝗎𝗋𝖺𝗍𝗂𝗈𝗇:</b> {duration}\n"
         f"📦 <b>𝖥𝗂𝗅𝖾 𝖲𝗂𝗓𝖾:</b> {filesize}\n"
         f"🎞 <b>𝖰𝗎𝖺𝗅𝗂𝗍𝗒:</b> {quality}\n"
